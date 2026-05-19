@@ -1,9 +1,9 @@
 openapi: 3.1.0
 info:
-  title: Climbing Gym Membership API
+  title: Chalk It Up Membership API
   version: 1.0.0
   description: |
-    API for managing climbing gym memberships, member accounts, waivers,
+    The Chalk It Up gym's API for managing climbing gym memberships, member accounts, waivers,
     passes, and facility access. Supports registration, plan management,
     check-in, and billing operations.
   contact:
@@ -1007,9 +1007,11 @@ components:
         first_name:
           type: string
           maxLength: 100
+          example: Moira
         last_name:
           type: string
           maxLength: 100
+          example: Rose
         email:
           type: string
           format: email
