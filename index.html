@@ -7,8 +7,8 @@
   <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,600,700|Roboto:300,400,700" rel="stylesheet" />
   <style>
     :root {
-      --accent: #ff6b9d;
-      --accent-dark: #d6447a;
+      --accent: #4432b9;
+      --accent-dark: #551bb1;
       --ink: #1f2330;
       --muted: #6b7280;
       --bg: #ffffff;
@@ -25,7 +25,7 @@
       position: sticky; top: 0; z-index: 1000;
       display: flex; align-items: center; justify-content: space-between;
       padding: 12px 24px;
-      background: linear-gradient(90deg, #fff 0%, #fff 60%, #ffe9f1 100%);
+      background: linear-gradient(90deg, #fff 0%, #b398d3 60%, #a284d6 100%);
       border-bottom: 1px solid var(--border);
       box-shadow: 0 1px 3px rgba(0,0,0,0.04);
     }
@@ -39,10 +39,10 @@
     .propose-btn {
       background: var(--accent); color: white; border: 0; padding: 10px 18px;
       border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer;
-      box-shadow: 0 2px 8px rgba(255,107,157,0.35);
+      box-shadow: 0 2px 8px rgba(68,50,185,0.35);
       transition: transform 0.1s ease, box-shadow 0.2s ease;
     }
-    .propose-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(255,107,157,0.5); }
+    .propose-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(68,50,185,0.5); }
     .propose-btn:active { transform: translateY(0); }
 
     /* Modal */
@@ -68,7 +68,7 @@
     }
     .field textarea { min-height: 90px; }
     .field textarea:focus, .field input:focus, .field select:focus {
-      outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255,107,157,0.15);
+      outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(68,50,185,0.15);
     }
 
     .toggle {
@@ -95,11 +95,11 @@
     .examples { margin-top: -8px; margin-bottom: 14px; }
     .example-chip {
       display: inline-block; padding: 6px 12px; margin: 4px 4px 4px 0;
-      background: #fff5f8; color: var(--accent-dark); border: 1px solid #ffd9e5;
+      background: #f5f3fb; color: var(--accent-dark); border: 1px solid #d9d4f0;
       border-radius: 20px; font-size: 12px; cursor: pointer;
       transition: background 0.15s ease;
     }
-    .example-chip:hover { background: #ffe0eb; }
+    .example-chip:hover { background: #e8e3f5; }
 
     /* Status toast */
     .status-panel {
@@ -146,7 +146,7 @@
       background: #1f2330; color: white; padding: 8px 24px; font-size: 12px;
       display: flex; align-items: center; justify-content: space-between;
     }
-    .ribbon a { color: #ffb3cc; text-decoration: none; }
+    .ribbon a { color: #c4b8e9; text-decoration: none; }
     .ribbon a:hover { text-decoration: underline; }
   </style>
 </head>
@@ -253,7 +253,7 @@
         scrollYOffset: 60,
         hideDownloadButton: false,
         theme: {
-          colors: { primary: { main: "#ff6b9d" } },
+          colors: { primary: { main: "#4432b9" } },
           typography: {
             fontFamily: "'Roboto', sans-serif",
             headings: { fontFamily: "'Montserrat', sans-serif" }
