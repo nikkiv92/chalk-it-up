@@ -14,10 +14,13 @@ End-to-end setup for the live AI documentation demo. Allow **30–45 minutes** t
                                                                        ▼
                                                               GitHub Actions workflow
                                                                        │
-                                                            ┌──────────┼──────────┐
-                                                       Claude API   Open PR    Auto-merge
-                                                                       │
-                                                                       ▼
+                                                              ┌────────┴────────┐
+                                                          Claude API         Open PR
+                                                                                │
+                                                                                ▼
+                                                                   Human reviews & merges
+                                                                                │
+                                                                                ▼
                                                               Pages redeploys, page polls,
                                                               Redoc re-renders. Magic.
 ```
@@ -66,11 +69,12 @@ This catches any issues with the AI step before you involve the proxy.
 2. Type something like: `Add a deprecated note to the MembershipPlan schema saying it will be removed in v2.`
 3. Click **Run workflow**.
 4. Watch the run. After ~30 seconds you should see:
-   - A new PR opened
-   - The PR squash-merges itself
-   - `openapi.yaml` updated on `main`
+   - A new PR opened against `main` with the AI-drafted diff
+   - The workflow finishes successfully and stops there
+5. Open the PR — confirm the diff looks reasonable. Approve and merge it yourself.
+6. After ~1 minute, GitHub Pages will redeploy and the docs site will reflect the change.
 
-If this works, the AI loop is solid. If it fails, the logs will tell you why — usually a typo in the API key or the spec format.
+If the workflow step fails, the logs will tell you why — usually a typo in the API key, or the "Allow GitHub Actions to create and approve pull requests" setting not yet enabled (Repo → Settings → Actions → General → Workflow permissions).
 
 ## Step 4 — Deploy the Cloudflare Worker
 
@@ -124,11 +128,15 @@ Wait ~1 minute for GitHub Pages to redeploy.
 4. Submit. Watch the status panel bottom-right:
    - Sending request → done
    - Claude is drafting → done (~10s)
-   - Pull request opened → status panel links to the PR
-   - Merged to main → done
-   - Docs redeployed → done, Redoc re-renders
+   - Pull request opened for review → done; status link points to the PR
+   - **Reviewed & merged by a human** → active (pulsing) until you actually merge the PR
+5. Click the PR link in the status panel. Review the diff. Merge.
+6. The page detects the merge and walks through:
+   - Reviewed & merged → done
+   - Docs redeployed → done (after ~25s for Pages to rebuild)
+   - Redoc re-renders with the change visible
 
-Total cycle: ~45–60 seconds.
+Total cycle: ~30s of autonomous work + however long you spend reviewing.
 
 ---
 
@@ -166,11 +174,14 @@ GitHub Pages can take up to 90 seconds for a redeploy. The page polls for new co
 
 When the VP asks "how does this work" — here's the elevator version that hits the AI-in-content-workflows beat:
 
-> The visitor types a request in plain English. That hits a Cloudflare Worker which is just a thin authentication boundary — it triggers a GitHub Actions workflow. The workflow sends the current OpenAPI spec plus the request to Claude, which returns the updated spec and a written explanation of what changed. The workflow opens a PR with that diff and explanation as the body — that's the human-in-the-loop checkpoint a real team would gate on review. For this demo I have it auto-merging after a beat. The merge triggers a Pages redeploy and the docs you see refresh on their own.
+> The visitor types a request in plain English. That hits a Cloudflare Worker which is just a thin authentication boundary — it triggers a GitHub Actions workflow. The workflow sends the current OpenAPI spec plus the request to Claude, which uses Anthropic's tool-use API to return the updated spec along with a written explanation of what changed. The workflow validates the new YAML and opens a PR — and that's where the autonomous part stops. A human reviews the diff and decides whether to merge. Once they merge, GitHub Pages redeploys and the docs you see refresh on their own.
 
-Key things you can emphasize depending on the question:
-- **Human-in-the-loop** is preserved as a PR — Claude doesn't push to main directly. That's the content-governance story.
-- **The spec is the source of truth.** Claude edits the OpenAPI YAML, not the rendered docs. So this works with any renderer (Redoc, Swagger UI, Mintlify, Stoplight) and doesn't lock you in.
-- **Validation step** catches malformed YAML before the PR even opens.
+Why this matters — and what to emphasize depending on the question:
+
+- **Human-in-the-loop is the load-bearing element.** Claude drafts; humans approve. The AI never pushes to main on its own. That's not a limitation, that's the design — it gives content teams a velocity boost without giving up editorial control. The PR is also a complete audit trail: who proposed the change, what Claude drafted, who approved, when it shipped.
+- **The spec is the source of truth.** Claude edits the OpenAPI YAML, not the rendered docs. So this works with any renderer (Redoc, Swagger UI, Mintlify, Stoplight) and doesn't lock you in to one tool.
+- **Structured output via tool use.** I'm not parsing free-form text from Claude — the API enforces a JSON schema for the response. That's the production-grade pattern for getting reliable structured output from LLMs.
+- **Validation catches malformed YAML** before the PR even opens, so reviewers never have to deal with broken specs.
 - **The cost is trivial** — pennies per change request.
-- **What you'd build for production:** richer validation (linting, breaking-change detection), a review queue for high-risk changes (auth, schema removal), an audit log of every AI-drafted change, fine-tuned prompts per domain (payments docs vs. terminal docs), and possibly RAG over your existing style guide so Claude writes in your team's voice.
+- **GitHub's own safety controls are in the loop too.** GitHub Actions can't open PRs by default — you have to explicitly opt in. Branch protection on `main` can require approvals before merge. Both of those work without any custom code, just by configuring the repo.
+- **What you'd build for production:** richer validation (linting, breaking-change detection), a review queue with different gates for high-risk changes (auth, schema removal) vs low-risk (description tweaks), an audit log of every AI-drafted change with diff and reviewer attribution, fine-tuned prompts per domain (payments docs vs. terminal docs), and possibly RAG over your existing style guide so Claude writes in your team's voice.

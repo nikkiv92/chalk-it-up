@@ -221,8 +221,8 @@
     <h4>AI documentation workflow</h4>
     <div class="status-step pending" id="step-send"><div class="icon"></div><div class="label">Sending request</div></div>
     <div class="status-step pending" id="step-ai"><div class="icon"></div><div class="label">Claude is drafting the spec update</div></div>
-    <div class="status-step pending" id="step-pr"><div class="icon"></div><div class="label">Pull request opened</div></div>
-    <div class="status-step pending" id="step-merge"><div class="icon"></div><div class="label">Merged to main</div></div>
+    <div class="status-step pending" id="step-pr"><div class="icon"></div><div class="label">Pull request opened for review</div></div>
+    <div class="status-step pending" id="step-merge"><div class="icon"></div><div class="label">Reviewed &amp; merged by a human</div></div>
     <div class="status-step pending" id="step-deploy"><div class="icon"></div><div class="label">Docs redeployed</div></div>
     <div class="status-link" id="statusLink"></div>
   </div>
@@ -379,20 +379,20 @@
               if (recent) {
                 sawPr = true;
                 setStep("step-ai", "done");
-                setStep("step-pr", "active");
-                setStatusLink(`<a href="${recent.html_url}" target="_blank">View PR #${recent.number}: ${recent.title} &rarr;</a>`);
+                setStep("step-pr", "done");
+                setStep("step-merge", "active");
+                setStatusLink(`Review &amp; merge: <a href="${recent.html_url}" target="_blank">PR #${recent.number} &rarr;</a>`);
               }
             }
           } catch (e) { /* ignore */ }
         }
 
-        // Poll the main branch SHA for a new commit
+        // Poll the main branch SHA for a new commit (i.e. a human merged the PR)
         if (sawPr && !sawMerge) {
           const sha = await fetchCurrentSha();
           if (sha && sha !== currentSpecSha) {
             sawMerge = true;
             currentSpecSha = sha;
-            setStep("step-pr", "done");
             setStep("step-merge", "done");
             setStep("step-deploy", "active");
 
@@ -407,18 +407,23 @@
           }
         }
 
-        // Safety timeout: give up after 5 minutes
-        if (elapsed > 5 * 60 * 1000) {
+        // Safety timeout: stop polling after 10 minutes (review-by-human can take a while)
+        if (elapsed > 10 * 60 * 1000) {
           clearInterval(pollTimer);
           if (!sawMerge) {
-            setStep("step-ai", "error");
-            setStatusLink(`<span style="color:#ef4444">Timed out waiting for the workflow. Check the Actions tab.</span>`);
+            if (sawPr) {
+              // PR is open, just no merge yet — graceful timeout, not an error
+              setStatusLink(`<span style="color:var(--muted)">Still awaiting review. The docs will refresh whenever the PR is merged — reload anytime to check.</span>`);
+            } else {
+              setStep("step-ai", "error");
+              setStatusLink(`<span style="color:#ef4444">Timed out waiting for the workflow. Check the Actions tab.</span>`);
+            }
             document.getElementById("submitBtn").disabled = false;
           }
         }
 
         if (sawMerge) { clearInterval(pollTimer); }
-      }, 5000); // 5s interval keeps us under GitHub's 60-req/hr unauthenticated limit
+      }, 5000); // 5s interval keeps us well under GitHub's 60-req/hr unauthenticated limit
     }
 
     // Initial render
