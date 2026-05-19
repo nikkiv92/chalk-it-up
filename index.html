@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Climbing Gym Membership API — Live AI Docs Demo</title>
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,600,700|Roboto:300,400,700" rel="stylesheet" />
+  <style>
+    :root {
+      --accent: #ff6b9d;
+      --accent-dark: #d6447a;
+      --ink: #1f2330;
+      --muted: #6b7280;
+      --bg: #ffffff;
+      --panel: #fafbfd;
+      --border: #e5e7eb;
+      --ok: #10b981;
+      --warn: #f59e0b;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%; font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--ink); }
+
+    /* Sticky top bar */
+    .topbar {
+      position: sticky; top: 0; z-index: 1000;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 24px;
+      background: linear-gradient(90deg, #fff 0%, #fff 60%, #ffe9f1 100%);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .brand {
+      display: flex; align-items: center; gap: 10px;
+      font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 18px;
+    }
+    .brand .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); display: inline-block; }
+    .brand .sub { font-weight: 400; color: var(--muted); font-size: 13px; margin-left: 8px; }
+
+    .propose-btn {
+      background: var(--accent); color: white; border: 0; padding: 10px 18px;
+      border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer;
+      box-shadow: 0 2px 8px rgba(255,107,157,0.35);
+      transition: transform 0.1s ease, box-shadow 0.2s ease;
+    }
+    .propose-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(255,107,157,0.5); }
+    .propose-btn:active { transform: translateY(0); }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(20,22,30,0.55);
+      display: none; align-items: center; justify-content: center; z-index: 2000;
+      backdrop-filter: blur(2px);
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: white; width: min(640px, 92vw); border-radius: 14px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+      padding: 28px; max-height: 90vh; overflow-y: auto;
+    }
+    .modal h2 { margin: 0 0 8px; font-family: 'Montserrat', sans-serif; font-size: 22px; }
+    .modal p.lead { color: var(--muted); margin: 0 0 20px; font-size: 14px; line-height: 1.5; }
+
+    .field { margin-bottom: 16px; }
+    .field label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px; }
+    .field textarea, .field input, .field select {
+      width: 100%; padding: 10px 12px; border: 1px solid var(--border);
+      border-radius: 8px; font: inherit; font-size: 14px; resize: vertical;
+    }
+    .field textarea { min-height: 90px; }
+    .field textarea:focus, .field input:focus, .field select:focus {
+      outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255,107,157,0.15);
+    }
+
+    .toggle {
+      display: inline-flex; align-items: center; gap: 8px;
+      color: var(--accent-dark); font-size: 13px; cursor: pointer; font-weight: 600;
+      background: none; border: 0; padding: 6px 0;
+    }
+    .toggle:hover { text-decoration: underline; }
+
+    .structured { display: none; padding: 16px; background: var(--panel); border-radius: 10px; margin-top: 8px; }
+    .structured.open { display: block; }
+
+    .actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+    .btn-secondary {
+      background: white; color: var(--ink); border: 1px solid var(--border);
+      padding: 10px 18px; border-radius: 8px; font-weight: 500; cursor: pointer;
+    }
+    .btn-primary {
+      background: var(--accent); color: white; border: 0;
+      padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer;
+    }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .examples { margin-top: -8px; margin-bottom: 14px; }
+    .example-chip {
+      display: inline-block; padding: 6px 12px; margin: 4px 4px 4px 0;
+      background: #fff5f8; color: var(--accent-dark); border: 1px solid #ffd9e5;
+      border-radius: 20px; font-size: 12px; cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    .example-chip:hover { background: #ffe0eb; }
+
+    /* Status toast */
+    .status-panel {
+      position: fixed; bottom: 24px; right: 24px; z-index: 1500;
+      background: white; border-radius: 12px; padding: 16px 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15); border: 1px solid var(--border);
+      width: 360px; display: none;
+    }
+    .status-panel.open { display: block; }
+    .status-panel h4 { margin: 0 0 12px; font-family: 'Montserrat', sans-serif; font-size: 15px; }
+    .status-step { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; font-size: 13px; }
+    .status-step .icon {
+      width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
+      border: 2px solid var(--border); margin-top: 1px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700;
+    }
+    .status-step.active .icon { border-color: var(--accent); background: var(--accent); color: white; }
+    .status-step.active .icon::before {
+      content: ""; width: 8px; height: 8px; background: white; border-radius: 50%;
+      animation: pulse 1s ease-in-out infinite;
+    }
+    .status-step.done .icon { border-color: var(--ok); background: var(--ok); color: white; }
+    .status-step.done .icon::before { content: "\2713"; color: white; }
+    .status-step.error .icon { border-color: #ef4444; background: #ef4444; color: white; }
+    .status-step.error .icon::before { content: "!"; color: white; }
+    .status-step .label { flex: 1; line-height: 1.4; color: var(--ink); }
+    .status-step.pending .label { color: var(--muted); }
+    .status-link { margin-top: 10px; font-size: 12px; }
+    .status-link a { color: var(--accent-dark); text-decoration: none; font-weight: 600; }
+    .status-link a:hover { text-decoration: underline; }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(0.6); opacity: 0.5; }
+    }
+
+    /* Redoc container */
+    #redoc-container { min-height: calc(100vh - 60px); }
+
+    /* Footer ribbon */
+    .ribbon {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+      background: #1f2330; color: white; padding: 8px 24px; font-size: 12px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .ribbon a { color: #ffb3cc; text-decoration: none; }
+    .ribbon a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">
+      <span class="dot"></span>
+      Chalk It Up &mdash; Climbing Gym Membership API
+      <span class="sub">Live AI documentation demo</span>
+    </div>
+    <button class="propose-btn" onclick="openModal()">
+      Propose a change with AI &#10024;
+    </button>
+  </div>
+
+  <!-- Redoc renders here -->
+  <div id="redoc-container"></div>
+
+  <!-- Modal -->
+  <div class="modal-backdrop" id="modalBackdrop" onclick="if (event.target===this) closeModal()">
+    <div class="modal" role="dialog" aria-modal="true">
+      <h2>Propose a change to the API</h2>
+      <p class="lead">
+        Describe what you'd like to change. An AI workflow will draft the spec update,
+        open a pull request, and merge it. The docs on this page will refresh automatically.
+      </p>
+
+      <div class="field">
+        <label for="nlInput">What should change?</label>
+        <textarea id="nlInput" placeholder="e.g., Add an optional 'nickname' field (max 50 chars) to the Member schema for staff to use on the barcode display."></textarea>
+      </div>
+
+      <div class="examples">
+        <span class="example-chip" onclick="useExample(this)">Add an optional `nickname` field to the Member schema (max 50 chars)</span>
+        <span class="example-chip" onclick="useExample(this)">Add a 429 Too Many Requests response to POST /auth/login</span>
+        <span class="example-chip" onclick="useExample(this)">Add a new GET /facilities/status endpoint returning current gym occupancy</span>
+      </div>
+
+      <button class="toggle" onclick="toggleStructured()">
+        <span id="structToggleText">Or use the structured form &darr;</span>
+      </button>
+
+      <div class="structured" id="structured">
+        <div class="field">
+          <label>Change type</label>
+          <select id="structType">
+            <option value="add_endpoint">Add an endpoint</option>
+            <option value="modify_endpoint">Modify an existing endpoint</option>
+            <option value="add_schema_field">Add a field to a schema</option>
+            <option value="add_response">Document a new response code</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Target (path, schema name, etc.)</label>
+          <input id="structTarget" placeholder="Member" />
+        </div>
+        <div class="field">
+          <label>Details</label>
+          <textarea id="structDetails" placeholder="Add an optional 'nickname' string field, max length 50, described as 'display name shown on barcode scanner'."></textarea>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn-primary" id="submitBtn" onclick="submitProposal()">Submit to AI</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status panel -->
+  <div class="status-panel" id="statusPanel">
+    <h4>AI documentation workflow</h4>
+    <div class="status-step pending" id="step-send"><div class="icon"></div><div class="label">Sending request</div></div>
+    <div class="status-step pending" id="step-ai"><div class="icon"></div><div class="label">Claude is drafting the spec update</div></div>
+    <div class="status-step pending" id="step-pr"><div class="icon"></div><div class="label">Pull request opened</div></div>
+    <div class="status-step pending" id="step-merge"><div class="icon"></div><div class="label">Merged to main</div></div>
+    <div class="status-step pending" id="step-deploy"><div class="icon"></div><div class="label">Docs redeployed</div></div>
+    <div class="status-link" id="statusLink"></div>
+  </div>
+
+  <div class="ribbon">
+    <span>This is a live demo. Every change you propose triggers a real AI workflow against a real repo.</span>
+    <a href="https://github.com/nikkiv92/chalk-it-up" target="_blank" rel="noopener">View on GitHub &rarr;</a>
+  </div>
+
+  <!-- Redoc -->
+  <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
+  <script>
+    // ====== CONFIG ======
+    // Replace this with your deployed Cloudflare Worker URL after you deploy it.
+    const WORKER_URL = "https://chalk-it-up-proxy.YOUR-SUBDOMAIN.workers.dev/propose";
+    const REPO_OWNER = "nikkiv92";
+    const REPO_NAME = "chalk-it-up";
+    const SPEC_URL = "./openapi.yaml";
+    // ====================
+
+    let currentSpecSha = null;
+    let pollTimer = null;
+
+    function renderRedoc() {
+      // Cache-bust by appending the latest known SHA so updates are picked up.
+      const bust = currentSpecSha ? `?v=${currentSpecSha}` : `?v=${Date.now()}`;
+      Redoc.init(SPEC_URL + bust, {
+        scrollYOffset: 60,
+        hideDownloadButton: false,
+        theme: {
+          colors: { primary: { main: "#ff6b9d" } },
+          typography: {
+            fontFamily: "'Roboto', sans-serif",
+            headings: { fontFamily: "'Montserrat', sans-serif" }
+          }
+        }
+      }, document.getElementById("redoc-container"));
+    }
+
+    async function fetchCurrentSha() {
+      try {
+        const r = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/commits/main`);
+        if (!r.ok) return null;
+        const data = await r.json();
+        return data.sha;
+      } catch (e) { return null; }
+    }
+
+    function openModal() { document.getElementById("modalBackdrop").classList.add("open"); }
+    function closeModal() { document.getElementById("modalBackdrop").classList.remove("open"); }
+    function useExample(el) { document.getElementById("nlInput").value = el.textContent; }
+    function toggleStructured() {
+      const s = document.getElementById("structured");
+      s.classList.toggle("open");
+      document.getElementById("structToggleText").innerHTML =
+        s.classList.contains("open") ? "Hide structured form &uarr;" : "Or use the structured form &darr;";
+    }
+
+    function setStep(id, state) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.remove("pending", "active", "done", "error");
+      el.classList.add(state);
+    }
+    function resetStatus() {
+      ["step-send","step-ai","step-pr","step-merge","step-deploy"].forEach(id => setStep(id, "pending"));
+      document.getElementById("statusLink").innerHTML = "";
+    }
+    function showStatus() { document.getElementById("statusPanel").classList.add("open"); }
+    function setStatusLink(html) { document.getElementById("statusLink").innerHTML = html; }
+
+    async function submitProposal() {
+      const nl = document.getElementById("nlInput").value.trim();
+      const structOpen = document.getElementById("structured").classList.contains("open");
+      const description = nl || (structOpen ? buildStructuredDescription() : "");
+
+      if (!description) {
+        alert("Please describe the change you'd like to make.");
+        return;
+      }
+
+      // Capture baseline SHA so we know when the workflow has actually landed a new commit.
+      currentSpecSha = await fetchCurrentSha();
+
+      closeModal();
+      resetStatus();
+      showStatus();
+      setStep("step-send", "active");
+
+      const submitBtn = document.getElementById("submitBtn");
+      submitBtn.disabled = true;
+
+      try {
+        const resp = await fetch(WORKER_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            description,
+            type: nl ? "natural_language" : "structured",
+            structured: structOpen ? {
+              change_type: document.getElementById("structType").value,
+              target: document.getElementById("structTarget").value,
+              details: document.getElementById("structDetails").value
+            } : null
+          })
+        });
+
+        if (!resp.ok) {
+          const text = await resp.text();
+          throw new Error(`Worker returned ${resp.status}: ${text}`);
+        }
+
+        setStep("step-send", "done");
+        setStep("step-ai", "active");
+        setStatusLink(`<a href="https://github.com/${REPO_OWNER}/${REPO_NAME}/actions" target="_blank">Watch the workflow on GitHub &rarr;</a>`);
+
+        // Start polling for new commits / PRs
+        startPolling();
+      } catch (e) {
+        console.error(e);
+        setStep("step-send", "error");
+        setStatusLink(`<span style="color:#ef4444">Error: ${e.message}</span>`);
+        submitBtn.disabled = false;
+      }
+    }
+
+    function buildStructuredDescription() {
+      const t = document.getElementById("structType").value;
+      const target = document.getElementById("structTarget").value;
+      const details = document.getElementById("structDetails").value;
+      const labels = {
+        add_endpoint: "Add a new endpoint",
+        modify_endpoint: "Modify an endpoint",
+        add_schema_field: "Add a field to a schema",
+        add_response: "Document a new response code"
+      };
+      return `${labels[t]}: ${target}\n\nDetails: ${details}`;
+    }
+
+    function startPolling() {
+      const start = Date.now();
+      let sawPr = false;
+      let sawMerge = false;
+      pollTimer = setInterval(async () => {
+        const elapsed = Date.now() - start;
+
+        // Poll open PRs first
+        if (!sawPr) {
+          try {
+            const r = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/pulls?state=all&sort=created&direction=desc&per_page=3`);
+            if (r.ok) {
+              const prs = await r.json();
+              const recent = prs.find(p => new Date(p.created_at).getTime() > start - 30000);
+              if (recent) {
+                sawPr = true;
+                setStep("step-ai", "done");
+                setStep("step-pr", "active");
+                setStatusLink(`<a href="${recent.html_url}" target="_blank">View PR #${recent.number}: ${recent.title} &rarr;</a>`);
+              }
+            }
+          } catch (e) { /* ignore */ }
+        }
+
+        // Poll the main branch SHA for a new commit
+        if (sawPr && !sawMerge) {
+          const sha = await fetchCurrentSha();
+          if (sha && sha !== currentSpecSha) {
+            sawMerge = true;
+            currentSpecSha = sha;
+            setStep("step-pr", "done");
+            setStep("step-merge", "done");
+            setStep("step-deploy", "active");
+
+            // Give Pages ~25s to redeploy, then re-render
+            setTimeout(() => {
+              setStep("step-deploy", "done");
+              renderRedoc();
+              // Status link is preserved as-is (still points to the merged PR)
+              document.getElementById("submitBtn").disabled = false;
+              setTimeout(() => document.getElementById("statusPanel").classList.remove("open"), 8000);
+            }, 25000);
+          }
+        }
+
+        // Safety timeout: give up after 5 minutes
+        if (elapsed > 5 * 60 * 1000) {
+          clearInterval(pollTimer);
+          if (!sawMerge) {
+            setStep("step-ai", "error");
+            setStatusLink(`<span style="color:#ef4444">Timed out waiting for the workflow. Check the Actions tab.</span>`);
+            document.getElementById("submitBtn").disabled = false;
+          }
+        }
+
+        if (sawMerge) { clearInterval(pollTimer); }
+      }, 5000); // 5s interval keeps us under GitHub's 60-req/hr unauthenticated limit
+    }
+
+    // Initial render
+    (async function init() {
+      currentSpecSha = await fetchCurrentSha();
+      renderRedoc();
+    })();
+  </script>
+</body>
+</html>

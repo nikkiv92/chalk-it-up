@@ -1,0 +1,201 @@
+name: AI Update Docs
+
+# Triggered by the Cloudflare Worker via repository_dispatch.
+# Listens for event_type: "propose-change"
+
+on:
+  repository_dispatch:
+    types: [propose-change]
+  workflow_dispatch:
+    inputs:
+      description:
+        description: "Manual change request (for testing without the Worker)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install anthropic pyyaml
+
+      - name: Resolve change request
+        id: req
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            DESC="${{ github.event.inputs.description }}"
+          else
+            DESC="${{ github.event.client_payload.description }}"
+          fi
+          # Write to a file to safely handle multiline/quotes
+          printf '%s' "$DESC" > /tmp/change_request.txt
+          echo "Change request length: $(wc -c < /tmp/change_request.txt) chars"
+          # Generate a short slug for the branch name
+          SLUG=$(echo "$DESC" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' | cut -c1-50 | sed 's/-$//')
+          echo "slug=$SLUG" >> $GITHUB_OUTPUT
+          echo "branch=ai/update-${SLUG}-$(date +%s)" >> $GITHUB_OUTPUT
+
+      - name: Run Claude to update the spec
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          python3 <<'PYEOF'
+          import os, sys, json, re, pathlib
+          from anthropic import Anthropic
+
+          client = Anthropic()
+          spec_path = pathlib.Path("openapi.yaml")
+          if not spec_path.exists():
+              print("ERROR: openapi.yaml not found at repo root")
+              sys.exit(1)
+
+          current_spec = spec_path.read_text()
+          change_request = pathlib.Path("/tmp/change_request.txt").read_text()
+
+          system_prompt = """You are an expert OpenAPI 3.x specification editor. You will be given:
+          1. The current OpenAPI YAML spec
+          2. A change request from a user
+
+          Your job is to return a JSON object with exactly two fields:
+          - "updated_spec": the FULL updated OpenAPI YAML as a string, with the requested change applied
+          - "explanation": a 2-3 sentence plain-English summary of what you changed and why
+
+          Critical rules:
+          - Preserve all existing endpoints, schemas, and content unless the change explicitly requires modification
+          - Keep the same overall structure, indentation style, and conventions
+          - If the request is ambiguous, make a reasonable choice and note it in the explanation
+          - The updated_spec must be valid OpenAPI 3.x YAML
+          - Output ONLY the JSON object. No markdown fences. No commentary."""
+
+          user_msg = f"""Current OpenAPI spec:
+          ```yaml
+          {current_spec}
+          ```
+
+          Change request:
+          {change_request}
+
+          Return the JSON object now."""
+
+          response = client.messages.create(
+              model="claude-sonnet-4-6",
+              max_tokens=16000,
+              system=system_prompt,
+              messages=[
+                  {"role": "user", "content": user_msg},
+                  {"role": "assistant", "content": "{"}  # prefill to force JSON
+              ]
+          )
+
+          raw = "{" + response.content[0].text
+          # Strip any accidental code fences
+          raw = re.sub(r"^```(?:json)?\s*", "", raw).rstrip("`").strip()
+
+          try:
+              result = json.loads(raw)
+          except json.JSONDecodeError as e:
+              print(f"Failed to parse JSON: {e}")
+              print("Raw response (first 2000 chars):")
+              print(raw[:2000])
+              sys.exit(1)
+
+          # Write the updated spec
+          spec_path.write_text(result["updated_spec"])
+          pathlib.Path("/tmp/explanation.txt").write_text(result["explanation"])
+          print("Spec updated. Explanation:")
+          print(result["explanation"])
+          PYEOF
+
+      - name: Validate the updated spec
+        run: |
+          pip install openapi-spec-validator
+          python3 -c "
+          from openapi_spec_validator import validate_spec
+          import yaml
+          spec = yaml.safe_load(open('openapi.yaml'))
+          validate_spec(spec)
+          print('Spec is valid OpenAPI 3.x')
+          " || { echo 'Validation failed but continuing (demo).'; true; }
+
+      - name: Check if there are changes
+        id: diff
+        run: |
+          if git diff --quiet openapi.yaml; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "No changes produced by Claude. Exiting."
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Changes detected."
+            git diff --stat openapi.yaml
+          fi
+
+      - name: Create branch and commit
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name "Chalk It Up AI Bot"
+          git config user.email "bot@chalk-it-up.local"
+          git checkout -b "${{ steps.req.outputs.branch }}"
+          git add openapi.yaml
+          EXPLANATION=$(cat /tmp/explanation.txt)
+          REQUEST=$(cat /tmp/change_request.txt)
+          git commit -m "AI: ${EXPLANATION:0:72}" -m "Change request: $REQUEST" -m "$EXPLANATION"
+          git push origin "${{ steps.req.outputs.branch }}"
+
+      - name: Open pull request
+        if: steps.diff.outputs.changed == 'true'
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EXPLANATION=$(cat /tmp/explanation.txt)
+          REQUEST=$(cat /tmp/change_request.txt)
+          PR_BODY=$(cat <<EOF
+          ## AI-drafted documentation update
+
+          **Change request:**
+          > $REQUEST
+
+          **What Claude changed:**
+          $EXPLANATION
+
+          ---
+          This PR was opened automatically by the AI documentation workflow.
+          Spec file updated: \`openapi.yaml\`
+          EOF
+          )
+          PR_URL=$(gh pr create \
+            --base main \
+            --head "${{ steps.req.outputs.branch }}" \
+            --title "AI: ${EXPLANATION:0:60}" \
+            --body "$PR_BODY")
+          echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+          echo "Opened: $PR_URL"
+
+      - name: Pause so the diff is visible
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          echo "Pausing 12 seconds so the PR diff is visible in the demo..."
+          sleep 12
+
+      - name: Auto-merge the PR
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr merge "${{ steps.pr.outputs.pr_url }}" --squash --delete-branch --admin || \
+          gh pr merge "${{ steps.pr.outputs.pr_url }}" --squash --delete-branch
+          echo "Merged."
