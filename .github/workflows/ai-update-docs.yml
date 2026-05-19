@@ -202,19 +202,4 @@ jobs:
             --title "AI: ${EXPLANATION:0:60}" \
             --body "$PR_BODY")
           echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
-          echo "Opened: $PR_URL"
-
-      - name: Pause so the diff is visible
-        if: steps.diff.outputs.changed == 'true'
-        run: |
-          echo "Pausing 12 seconds so the PR diff is visible in the demo..."
-          sleep 12
-
-      - name: Auto-merge the PR
-        if: steps.diff.outputs.changed == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh pr merge "${{ steps.pr.outputs.pr_url }}" --squash --delete-branch --admin || \
-          gh pr merge "${{ steps.pr.outputs.pr_url }}" --squash --delete-branch
-          echo "Merged."
+          echo "::notice::PR opened: $PR_URL — awaiting human review"
