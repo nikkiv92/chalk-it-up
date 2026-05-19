@@ -70,16 +70,15 @@ jobs:
           1. The current OpenAPI YAML spec
           2. A change request from a user
 
-          Your job is to return a JSON object with exactly two fields:
-          - "updated_spec": the FULL updated OpenAPI YAML as a string, with the requested change applied
-          - "explanation": a 2-3 sentence plain-English summary of what you changed and why
+          Your job is to apply the requested change to the spec and call the
+          submit_spec_update tool with the result.
 
           Critical rules:
           - Preserve all existing endpoints, schemas, and content unless the change explicitly requires modification
           - Keep the same overall structure, indentation style, and conventions
           - If the request is ambiguous, make a reasonable choice and note it in the explanation
           - The updated_spec must be valid OpenAPI 3.x YAML
-          - Output ONLY the JSON object. No markdown fences. No commentary."""
+          - Always call the submit_spec_update tool. Do not respond in plain text."""
 
           user_msg = f"""Current OpenAPI spec:
           ```yaml
@@ -89,28 +88,48 @@ jobs:
           Change request:
           {change_request}
 
-          Return the JSON object now."""
+          Apply the change and call the submit_spec_update tool with the result."""
+
+          tools = [{
+              "name": "submit_spec_update",
+              "description": "Submit the updated OpenAPI spec and a written explanation of the change.",
+              "input_schema": {
+                  "type": "object",
+                  "properties": {
+                      "updated_spec": {
+                          "type": "string",
+                          "description": "The FULL updated OpenAPI YAML as a string, with the requested change applied."
+                      },
+                      "explanation": {
+                          "type": "string",
+                          "description": "A 2-3 sentence plain-English summary of what was changed and why."
+                      }
+                  },
+                  "required": ["updated_spec", "explanation"]
+              }
+          }]
 
           response = client.messages.create(
               model="claude-sonnet-4-6",
               max_tokens=16000,
               system=system_prompt,
-              messages=[
-                  {"role": "user", "content": user_msg},
-                  {"role": "assistant", "content": "{"}  # prefill to force JSON
-              ]
+              tools=tools,
+              tool_choice={"type": "tool", "name": "submit_spec_update"},
+              messages=[{"role": "user", "content": user_msg}]
           )
 
-          raw = "{" + response.content[0].text
-          # Strip any accidental code fences
-          raw = re.sub(r"^```(?:json)?\s*", "", raw).rstrip("`").strip()
+          # Extract the tool_use block from the response
+          result = None
+          for block in response.content:
+              if getattr(block, "type", None) == "tool_use" and block.name == "submit_spec_update":
+                  result = block.input
+                  break
 
-          try:
-              result = json.loads(raw)
-          except json.JSONDecodeError as e:
-              print(f"Failed to parse JSON: {e}")
-              print("Raw response (first 2000 chars):")
-              print(raw[:2000])
+          if result is None:
+              print("ERROR: Claude did not call the submit_spec_update tool.")
+              print(f"Stop reason: {response.stop_reason}")
+              for block in response.content:
+                  print(f"  Block type: {getattr(block, 'type', '?')}")
               sys.exit(1)
 
           # Write the updated spec
