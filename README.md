@@ -6,7 +6,7 @@ OpenAPI 3.1.0 specification for a climbing gym membership platform covering memb
 
 ## Contents
 
-- [`climbing-gym-api.yaml`](./climbing-gym-api.yaml) — The full OpenAPI spec
+- [`openapi.yaml`](./openapi.yaml) — The full OpenAPI spec
 
 ---
 
@@ -63,7 +63,7 @@ Role enforcement is left to the implementing service; the spec documents intent 
 **Swagger UI (Docker)**
 ```bash
 docker run -p 8080:8080 \
-  -e SWAGGER_JSON=/spec/climbing-gym-api.yaml \
+  -e SWAGGER_JSON=/spec/openapi.yaml \
   -v $(pwd):/spec \
   swaggerapi/swagger-ui
 # Open http://localhost:8080
@@ -71,7 +71,7 @@ docker run -p 8080:8080 \
 
 **Redoc (npx)**
 ```bash
-npx @redocly/cli preview-docs climbing-gym-api.yaml
+npx @redocly/cli preview-docs openapi.yaml
 ```
 
 **Stoplight Studio** — Open the repo folder directly in [Stoplight Studio](https://stoplight.io/studio) for a graphical editor and live preview.
@@ -84,13 +84,13 @@ Validate the spec with the [Redocly CLI](https://redocly.com/docs/cli/):
 
 ```bash
 npm install -g @redocly/cli
-redocly lint climbing-gym-api.yaml
+redocly lint openapi.yaml
 ```
 
 Or with [Vacuum](https://quobix.com/vacuum/):
 
 ```bash
-vacuum lint climbing-gym-api.yaml
+vacuum lint openapi.yaml
 ```
 
 ---
@@ -102,13 +102,13 @@ Use [OpenAPI Generator](https://openapi-generator.tech/) to scaffold a client fr
 ```bash
 # TypeScript (fetch)
 openapi-generator-cli generate \
-  -i climbing-gym-api.yaml \
+  -i openapi.yaml \
   -g typescript-fetch \
   -o ./clients/typescript
 
 # Python
 openapi-generator-cli generate \
-  -i climbing-gym-api.yaml \
+  -i openapi.yaml \
   -g python \
   -o ./clients/python
 ```
@@ -117,8 +117,8 @@ openapi-generator-cli generate \
 
 ## Contributing
 
-1. Edit `climbing-gym-api.yaml`.
-2. Run `redocly lint climbing-gym-api.yaml` and fix any errors before committing.
+1. Edit `openapi.yaml`.
+2. Run `redocly lint openapi.yaml` and fix any errors before committing.
 3. Open a pull request with a description of what changed and why.
 
 For breaking changes (removed fields, changed types, renamed operationIds), bump the `info.version` and note the change in your PR description.

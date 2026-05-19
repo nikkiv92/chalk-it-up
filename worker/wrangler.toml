@@ -1,0 +1,12 @@
+name = "chalk-it-up-proxy"
+main = "worker.js"
+compatibility_date = "2024-09-01"
+
+# Public env vars (not secrets)
+[vars]
+REPO_OWNER = "nikkiv92"
+REPO_NAME = "chalk-it-up"
+ALLOWED_ORIGIN = "https://nikkiv92.github.io"
+
+# GITHUB_TOKEN is a secret. Set it with:
+#   wrangler secret put GITHUB_TOKEN
