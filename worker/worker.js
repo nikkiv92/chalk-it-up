@@ -49,6 +49,11 @@ export default {
       return new Response("Description is too long (max 2000 chars)", { status: 400, headers: corsHeaders(origin) });
     }
 
+    const VALID_VERSIONS = new Set(["massachusetts", "maine"]);
+    const versions = Array.isArray(body.versions)
+      ? body.versions.map(v => String(v)).filter(v => VALID_VERSIONS.has(v))
+      : [];
+
     // Basic safety: strip dispatch payload of anything beyond expected fields
     const clientPayload = {
       description,
@@ -58,6 +63,7 @@ export default {
         target: String(body.structured.target || "").slice(0, 200),
         details: String(body.structured.details || "").slice(0, 1000)
       } : null,
+      versions: versions.length > 0 ? versions : ["massachusetts"],
       requested_at: new Date().toISOString()
     };
 

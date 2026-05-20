@@ -1,0 +1,1654 @@
+openapi: 3.1.0
+info:
+  title: Chalk It Up Membership API
+  version: 2.0.0
+  description: |
+    The Chalk It Up gym's API for managing climbing gym memberships, member accounts, waivers,
+    passes, and facility access. Supports registration, plan management,
+    check-in, and billing operations.
+
+    **v2 additions:** Member preferences endpoint for personalized notification and
+    display settings.
+  contact:
+    name: Gym API Support
+    email: api-support@climbinggym.example.com
+  license:
+    name: MIT
+
+servers:
+  - url: https://api.climbinggym.example.com/v2
+    description: Production
+  - url: https://staging-api.climbinggym.example.com/v2
+    description: Staging
+
+tags:
+  - name: Auth
+    description: Authentication and session management
+  - name: Members
+    description: Member account creation and management
+  - name: Memberships
+    description: Membership plans and subscriptions
+  - name: Passes
+    description: Day passes and punch cards
+  - name: Waivers
+    description: Liability waiver management
+  - name: Check-ins
+    description: Facility access and check-in records
+  - name: Billing
+    description: Payment methods and invoices
+  - name: Emergency Contacts
+    description: Member emergency contact information
+  - name: Preferences
+    description: Member notification and display preferences (new in v2)
+
+# ---------------------------------------------------------------------------
+# PATHS
+# ---------------------------------------------------------------------------
+paths:
+
+  # ── Auth ──────────────────────────────────────────────────────────────────
+
+  /auth/register:
+    post:
+      operationId: registerMember
+      tags: [Auth]
+      summary: Register a new member account
+      description: Creates a member account and sends an email verification link.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistrationRequest'
+      responses:
+        '201':
+          description: Account created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [Auth]
+      summary: Log in with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authenticated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [Auth]
+      summary: Invalidate the current session token
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: Logged out successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/refresh:
+    post:
+      operationId: refreshToken
+      tags: [Auth]
+      summary: Exchange a refresh token for a new access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/password/reset-request:
+    post:
+      operationId: requestPasswordReset
+      tags: [Auth]
+      summary: Request a password reset email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '202':
+          description: Reset email sent if account exists
+
+  /auth/password/reset:
+    post:
+      operationId: resetPassword
+      tags: [Auth]
+      summary: Reset password using a token from email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, new_password]
+              properties:
+                token:
+                  type: string
+                new_password:
+                  type: string
+                  minLength: 8
+      responses:
+        '204':
+          description: Password reset successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /auth/email/verify:
+    post:
+      operationId: verifyEmail
+      tags: [Auth]
+      summary: Verify a member's email address
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+      responses:
+        '204':
+          description: Email verified successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  # ── Members ───────────────────────────────────────────────────────────────
+
+  /members:
+    get:
+      operationId: listMembers
+      tags: [Members]
+      summary: List all members (staff only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/MemberStatus'
+        - name: search
+          in: query
+          description: Search by name or email
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Paginated list of members
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Member'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /members/me:
+    get:
+      operationId: getMyProfile
+      tags: [Members]
+      summary: Get the authenticated member's profile
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Member profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    patch:
+      operationId: updateMyProfile
+      tags: [Members]
+      summary: Update the authenticated member's profile
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberUpdateRequest'
+      responses:
+        '200':
+          description: Updated member profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+    delete:
+      operationId: deleteMyAccount
+      tags: [Members]
+      summary: Request account deletion (GDPR / CCPA)
+      security:
+        - BearerAuth: []
+      responses:
+        '202':
+          description: Deletion request accepted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /members/{memberId}:
+    parameters:
+      - $ref: '#/components/parameters/MemberIdParam'
+    get:
+      operationId: getMember
+      tags: [Members]
+      summary: Get a member by ID (staff only)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Member details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateMember
+      tags: [Members]
+      summary: Update a member's profile (staff only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberUpdateRequest'
+      responses:
+        '200':
+          description: Updated member
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Emergency Contacts ────────────────────────────────────────────────────
+
+  /members/me/emergency-contacts:
+    get:
+      operationId: listMyEmergencyContacts
+      tags: [Emergency Contacts]
+      summary: List the authenticated member's emergency contacts
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of emergency contacts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EmergencyContact'
+    post:
+      operationId: addEmergencyContact
+      tags: [Emergency Contacts]
+      summary: Add an emergency contact
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmergencyContactRequest'
+      responses:
+        '201':
+          description: Emergency contact created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmergencyContact'
+
+  /members/me/emergency-contacts/{contactId}:
+    parameters:
+      - name: contactId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      operationId: updateEmergencyContact
+      tags: [Emergency Contacts]
+      summary: Replace an emergency contact
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmergencyContactRequest'
+      responses:
+        '200':
+          description: Updated contact
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmergencyContact'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteEmergencyContact
+      tags: [Emergency Contacts]
+      summary: Remove an emergency contact
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: Contact removed
+
+  # ── Waivers ───────────────────────────────────────────────────────────────
+
+  /waivers:
+    get:
+      operationId: listWaivers
+      tags: [Waivers]
+      summary: List available waiver templates
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Waiver templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WaiverTemplate'
+
+  /members/me/waivers:
+    get:
+      operationId: listMyWaivers
+      tags: [Waivers]
+      summary: List waivers signed by the authenticated member
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Signed waivers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SignedWaiver'
+    post:
+      operationId: signWaiver
+      tags: [Waivers]
+      summary: Sign a liability waiver
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WaiverSignRequest'
+      responses:
+        '201':
+          description: Waiver signed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignedWaiver'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  # ── Membership Plans ──────────────────────────────────────────────────────
+
+  /membership-plans:
+    get:
+      operationId: listMembershipPlans
+      tags: [Memberships]
+      summary: List available membership plans
+      parameters:
+        - name: active_only
+          in: query
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: Membership plans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MembershipPlan'
+
+  /membership-plans/{planId}:
+    get:
+      operationId: getMembershipPlan
+      tags: [Memberships]
+      summary: Get a specific membership plan
+      parameters:
+        - name: planId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Membership plan details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipPlan'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Member Subscriptions ──────────────────────────────────────────────────
+
+  /members/me/membership:
+    get:
+      operationId: getMyMembership
+      tags: [Memberships]
+      summary: Get the authenticated member's active membership
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Active membership
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membership'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    post:
+      operationId: subscribeMembership
+      tags: [Memberships]
+      summary: Purchase or activate a membership plan
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MembershipSubscribeRequest'
+      responses:
+        '201':
+          description: Membership activated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membership'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+    delete:
+      operationId: cancelMembership
+      tags: [Memberships]
+      summary: Cancel the authenticated member's membership
+      description: Cancels at the end of the current billing period unless `immediate=true`.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: immediate
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Cancellation confirmed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membership'
+
+  /members/me/membership/freeze:
+    post:
+      operationId: freezeMembership
+      tags: [Memberships]
+      summary: Freeze (pause) the authenticated member's membership
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FreezeMembershipRequest'
+      responses:
+        '200':
+          description: Membership frozen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membership'
+
+  /members/me/membership/unfreeze:
+    post:
+      operationId: unfreezeMembership
+      tags: [Memberships]
+      summary: Unfreeze a paused membership
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Membership resumed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membership'
+
+  # ── Day Passes ────────────────────────────────────────────────────────────
+
+  /passes:
+    get:
+      operationId: listPassProducts
+      tags: [Passes]
+      summary: List available day pass and punch card products
+      responses:
+        '200':
+          description: Pass products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PassProduct'
+
+  /members/me/passes:
+    get:
+      operationId: listMyPasses
+      tags: [Passes]
+      summary: List passes owned by the authenticated member
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, exhausted, expired]
+      responses:
+        '200':
+          description: Member passes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MemberPass'
+
+    post:
+      operationId: purchasePass
+      tags: [Passes]
+      summary: Purchase a day pass or punch card
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchasePassRequest'
+      responses:
+        '201':
+          description: Pass purchased
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberPass'
+
+  # ── Check-ins ─────────────────────────────────────────────────────────────
+
+  /check-ins:
+    post:
+      operationId: checkIn
+      tags: [Check-ins]
+      summary: Record a member check-in (staff / kiosk)
+      description: |
+        Validates membership or pass entitlement and records entry.
+        Can identify member by `member_id`, `barcode`, or `email`.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckInRequest'
+      responses:
+        '201':
+          description: Check-in recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckIn'
+        '402':
+          description: No valid membership or pass
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /members/me/check-ins:
+    get:
+      operationId: listMyCheckIns
+      tags: [Check-ins]
+      summary: List the authenticated member's check-in history
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Check-in history
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CheckIn'
+
+  # ── Billing ───────────────────────────────────────────────────────────────
+
+  /members/me/payment-methods:
+    get:
+      operationId: listPaymentMethods
+      tags: [Billing]
+      summary: List saved payment methods
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Payment methods
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PaymentMethod'
+
+    post:
+      operationId: addPaymentMethod
+      tags: [Billing]
+      summary: Add a new payment method via payment token
+      description: Accepts a tokenized card reference from a PCI-compliant frontend (e.g. Stripe).
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddPaymentMethodRequest'
+      responses:
+        '201':
+          description: Payment method added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentMethod'
+
+  /members/me/payment-methods/{paymentMethodId}:
+    parameters:
+      - name: paymentMethodId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    delete:
+      operationId: deletePaymentMethod
+      tags: [Billing]
+      summary: Remove a saved payment method
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: Payment method removed
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: setDefaultPaymentMethod
+      tags: [Billing]
+      summary: Set a payment method as default
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [is_default]
+              properties:
+                is_default:
+                  type: boolean
+                  enum: [true]
+      responses:
+        '200':
+          description: Default updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentMethod'
+
+  /members/me/invoices:
+    get:
+      operationId: listMyInvoices
+      tags: [Billing]
+      summary: List billing invoices for the authenticated member
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Invoice list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Invoice'
+
+  /members/me/invoices/{invoiceId}:
+    get:
+      operationId: getInvoice
+      tags: [Billing]
+      summary: Get a specific invoice
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Invoice details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Preferences (new in v2) ───────────────────────────────────────────────
+
+  /members/me/preferences:
+    get:
+      operationId: getMyPreferences
+      tags: [Preferences]
+      summary: Get the authenticated member's preferences
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Member preferences
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberPreferences'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    patch:
+      operationId: updateMyPreferences
+      tags: [Preferences]
+      summary: Update the authenticated member's preferences
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberPreferences'
+      responses:
+        '200':
+          description: Updated preferences
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberPreferences'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /members/{memberId}/preferences:
+    parameters:
+      - $ref: '#/components/parameters/MemberIdParam'
+    get:
+      operationId: getMemberPreferences
+      tags: [Preferences]
+      summary: Get a member's preferences (staff only)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Member preferences
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberPreferences'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+# ---------------------------------------------------------------------------
+# COMPONENTS
+# ---------------------------------------------------------------------------
+components:
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    MemberIdParam:
+      name: memberId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PerPageParam:
+      name: per_page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Resource already exists
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    UnprocessableEntity:
+      description: Validation errors
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationError'
+
+  schemas:
+
+    # ── Common ──────────────────────────────────────────────────────────────
+
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: resource_not_found
+        message:
+          type: string
+          example: The requested resource could not be found.
+
+    ValidationError:
+      type: object
+      required: [code, message, errors]
+      properties:
+        code:
+          type: string
+          example: validation_failed
+        message:
+          type: string
+          example: One or more fields are invalid.
+        errors:
+          type: array
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field:
+                type: string
+                example: email
+              message:
+                type: string
+                example: Must be a valid email address.
+
+    PaginatedResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: {}
+        meta:
+          type: object
+          required: [page, per_page, total, total_pages]
+          properties:
+            page:
+              type: integer
+              example: 1
+            per_page:
+              type: integer
+              example: 20
+            total:
+              type: integer
+              example: 143
+            total_pages:
+              type: integer
+              example: 8
+
+    # ── Auth ────────────────────────────────────────────────────────────────
+
+    RegistrationRequest:
+      type: object
+      required: [first_name, last_name, email, password, date_of_birth, phone]
+      properties:
+        first_name:
+          type: string
+          maxLength: 100
+          example: Johnny
+        last_name:
+          type: string
+          maxLength: 100
+          example: Rose
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        date_of_birth:
+          type: string
+          format: date
+          description: Must be 18+ or accompanied by a guardian waiver.
+        phone:
+          type: string
+          example: "+16175550123"
+        referred_by_member_id:
+          type: string
+          format: uuid
+          description: Optional referral from an existing member.
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      required: [access_token, refresh_token, expires_in, member]
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        expires_in:
+          type: integer
+          description: Access token lifetime in seconds
+          example: 3600
+        member:
+          $ref: '#/components/schemas/Member'
+
+    # ── Member ───────────────────────────────────────────────────────────────
+
+    MemberStatus:
+      type: string
+      enum: [active, inactive, suspended, pending_verification]
+
+    Member:
+      type: object
+      required: [id, first_name, last_name, email, status, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        first_name:
+          type: string
+        last_name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        date_of_birth:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/MemberStatus'
+        barcode:
+          type: string
+          description: Scannable gym access barcode
+        email_verified_at:
+          type: string
+          format: date-time
+          nullable: true
+        photo_url:
+          type: string
+          format: uri
+          nullable: true
+        notes:
+          type: string
+          description: Internal staff notes (staff-only field)
+        preferences:
+          $ref: '#/components/schemas/MemberPreferences'
+          description: Member preferences (included when explicitly requested, new in v2)
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    MemberUpdateRequest:
+      type: object
+      properties:
+        first_name:
+          type: string
+        last_name:
+          type: string
+        phone:
+          type: string
+        date_of_birth:
+          type: string
+          format: date
+        photo_url:
+          type: string
+          format: uri
+
+    # ── Member Preferences (new in v2) ───────────────────────────────────────
+
+    MemberPreferences:
+      type: object
+      properties:
+        language:
+          type: string
+          description: Preferred display language (BCP 47 tag)
+          example: en-US
+        theme:
+          type: string
+          enum: [system, light, dark]
+          default: system
+        notify_check_in:
+          type: boolean
+          description: Send a push notification on each gym check-in
+          default: false
+        notify_billing:
+          type: boolean
+          description: Send email notifications for invoices and payment events
+          default: true
+        notify_announcements:
+          type: boolean
+          description: Receive gym announcements and promotional emails
+          default: true
+        marketing_opt_in:
+          type: boolean
+          description: Opt in to third-party marketing communications
+          default: false
+
+    # ── Emergency Contact ────────────────────────────────────────────────────
+
+    EmergencyContactRequest:
+      type: object
+      required: [name, relationship, phone]
+      properties:
+        name:
+          type: string
+        relationship:
+          type: string
+          example: Spouse
+        phone:
+          type: string
+        email:
+          type: string
+          format: email
+
+    EmergencyContact:
+      allOf:
+        - type: object
+          required: [id]
+          properties:
+            id:
+              type: string
+              format: uuid
+        - $ref: '#/components/schemas/EmergencyContactRequest'
+
+    # ── Waivers ──────────────────────────────────────────────────────────────
+
+    WaiverTemplate:
+      type: object
+      required: [id, title, version, content, required]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          example: Standard Liability Waiver
+        version:
+          type: string
+          example: "2024-01"
+        content:
+          type: string
+          description: Full waiver text (Markdown or HTML)
+        required:
+          type: boolean
+          description: Whether signing is mandatory before access
+
+    WaiverSignRequest:
+      type: object
+      required: [waiver_template_id, agreed, signature]
+      properties:
+        waiver_template_id:
+          type: string
+          format: uuid
+        agreed:
+          type: boolean
+          enum: [true]
+        signature:
+          type: string
+          description: Typed full name as electronic signature
+        signed_on_behalf_of_minor:
+          type: boolean
+          default: false
+        minor_name:
+          type: string
+          description: Required when signing on behalf of a minor
+
+    SignedWaiver:
+      type: object
+      required: [id, member_id, waiver_template_id, version, signed_at, ip_address]
+      properties:
+        id:
+          type: string
+          format: uuid
+        member_id:
+          type: string
+          format: uuid
+        waiver_template_id:
+          type: string
+          format: uuid
+        version:
+          type: string
+        signature:
+          type: string
+        signed_on_behalf_of_minor:
+          type: boolean
+        minor_name:
+          type: string
+          nullable: true
+        signed_at:
+          type: string
+          format: date-time
+        ip_address:
+          type: string
+
+    # ── Membership Plans ─────────────────────────────────────────────────────
+
+    BillingInterval:
+      type: string
+      enum: [monthly, quarterly, annually]
+
+    MembershipPlan:
+      type: object
+      required: [id, name, billing_interval, price_cents, currency, features, is_active]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: Unlimited Monthly
+        description:
+          type: string
+        billing_interval:
+          $ref: '#/components/schemas/BillingInterval'
+        price_cents:
+          type: integer
+          example: 7500
+        currency:
+          type: string
+          example: USD
+        trial_days:
+          type: integer
+          example: 7
+        features:
+          type: array
+          items:
+            type: string
+          example:
+            - Unlimited climbing access
+            - Guest passes (2/month)
+            - Locker rental discount
+        max_freezes_per_year:
+          type: integer
+          example: 2
+        max_freeze_duration_days:
+          type: integer
+          example: 30
+        is_active:
+          type: boolean
+
+    # ── Membership (Subscription) ────────────────────────────────────────────
+
+    MembershipStatus:
+      type: string
+      enum: [trialing, active, frozen, past_due, canceled, expired]
+
+    Membership:
+      type: object
+      required: [id, member_id, plan_id, status, current_period_start, current_period_end]
+      properties:
+        id:
+          type: string
+          format: uuid
+        member_id:
+          type: string
+          format: uuid
+        plan_id:
+          type: string
+          format: uuid
+        plan:
+          $ref: '#/components/schemas/MembershipPlan'
+        status:
+          $ref: '#/components/schemas/MembershipStatus'
+        current_period_start:
+          type: string
+          format: date
+        current_period_end:
+          type: string
+          format: date
+        canceled_at:
+          type: string
+          format: date-time
+          nullable: true
+        cancel_at_period_end:
+          type: boolean
+        frozen_from:
+          type: string
+          format: date
+          nullable: true
+        frozen_until:
+          type: string
+          format: date
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    MembershipSubscribeRequest:
+      type: object
+      required: [plan_id]
+      properties:
+        plan_id:
+          type: string
+          format: uuid
+        payment_method_id:
+          type: string
+          format: uuid
+          description: Defaults to member's default payment method.
+        coupon_code:
+          type: string
+
+    FreezeMembershipRequest:
+      type: object
+      required: [frozen_from, frozen_until]
+      properties:
+        frozen_from:
+          type: string
+          format: date
+        frozen_until:
+          type: string
+          format: date
+        reason:
+          type: string
+          example: Travelling for work
+
+    # ── Passes ───────────────────────────────────────────────────────────────
+
+    PassType:
+      type: string
+      enum: [day_pass, punch_card]
+
+    PassProduct:
+      type: object
+      required: [id, name, type, price_cents, currency, is_active]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: 10-Punch Card
+        type:
+          $ref: '#/components/schemas/PassType'
+        punches_included:
+          type: integer
+          description: Only for punch_card type
+          example: 10
+        valid_days:
+          type: integer
+          description: Days until expiry after purchase
+          example: 365
+        price_cents:
+          type: integer
+          example: 9000
+        currency:
+          type: string
+          example: USD
+        is_active:
+          type: boolean
+
+    MemberPass:
+      type: object
+      required: [id, member_id, product_id, type, status, purchased_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        member_id:
+          type: string
+          format: uuid
+        product_id:
+          type: string
+          format: uuid
+        product:
+          $ref: '#/components/schemas/PassProduct'
+        type:
+          $ref: '#/components/schemas/PassType'
+        status:
+          type: string
+          enum: [active, exhausted, expired]
+        punches_remaining:
+          type: integer
+          nullable: true
+        expires_at:
+          type: string
+          format: date
+          nullable: true
+        purchased_at:
+          type: string
+          format: date-time
+
+    PurchasePassRequest:
+      type: object
+      required: [product_id]
+      properties:
+        product_id:
+          type: string
+          format: uuid
+        payment_method_id:
+          type: string
+          format: uuid
+
+    # ── Check-ins ────────────────────────────────────────────────────────────
+
+    CheckInRequest:
+      type: object
+      description: At least one of member_id, barcode, or email is required.
+      properties:
+        member_id:
+          type: string
+          format: uuid
+        barcode:
+          type: string
+        email:
+          type: string
+          format: email
+        pass_id:
+          type: string
+          format: uuid
+          description: Explicitly consume a specific punch card (optional).
+        staff_override:
+          type: boolean
+          default: false
+          description: Allow entry without valid entitlement (staff only).
+        notes:
+          type: string
+
+    CheckIn:
+      type: object
+      required: [id, member_id, checked_in_at, entitlement_type]
+      properties:
+        id:
+          type: string
+          format: uuid
+        member_id:
+          type: string
+          format: uuid
+        checked_in_at:
+          type: string
+          format: date-time
+        entitlement_type:
+          type: string
+          enum: [membership, day_pass, punch_card, staff_override]
+        membership_id:
+          type: string
+          format: uuid
+          nullable: true
+        pass_id:
+          type: string
+          format: uuid
+          nullable: true
+        staff_id:
+          type: string
+          format: uuid
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+
+    # ── Billing ──────────────────────────────────────────────────────────────
+
+    PaymentMethod:
+      type: object
+      required: [id, type, is_default, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [card, ach, other]
+        brand:
+          type: string
+          example: visa
+        last4:
+          type: string
+          example: "4242"
+        exp_month:
+          type: integer
+          example: 12
+        exp_year:
+          type: integer
+          example: 2027
+        is_default:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    AddPaymentMethodRequest:
+      type: object
+      required: [provider_token]
+      properties:
+        provider_token:
+          type: string
+          description: Payment processor token (e.g. Stripe PaymentMethod ID)
+        set_as_default:
+          type: boolean
+          default: false
+
+    InvoiceStatus:
+      type: string
+      enum: [draft, open, paid, uncollectible, void]
+
+    Invoice:
+      type: object
+      required: [id, member_id, status, amount_cents, currency, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        member_id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/InvoiceStatus'
+        amount_cents:
+          type: integer
+          example: 7500
+        currency:
+          type: string
+          example: USD
+        description:
+          type: string
+          example: Unlimited Monthly — June 2025
+        pdf_url:
+          type: string
+          format: uri
+          nullable: true
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+        due_date:
+          type: string
+          format: date
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
