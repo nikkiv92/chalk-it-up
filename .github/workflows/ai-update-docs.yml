@@ -12,6 +12,11 @@ on:
         description: "Manual change request (for testing without the Worker)"
         required: true
         type: string
+      versions:
+        description: "Comma-separated versions to update (e.g. massachusetts,maine)"
+        required: false
+        default: "massachusetts"
+        type: string
 
 permissions:
   contents: write
@@ -20,7 +25,7 @@ permissions:
 jobs:
   update-docs:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -33,37 +38,59 @@ jobs:
       - name: Install dependencies
         run: pip install anthropic pyyaml
 
-      - name: Resolve change request
+      - name: Resolve change request and versions
         id: req
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          WD_DESCRIPTION: ${{ github.event.inputs.description }}
+          WD_VERSIONS: ${{ github.event.inputs.versions }}
+          RD_DESCRIPTION: ${{ github.event.client_payload.description }}
+          RD_VERSIONS: ${{ toJson(github.event.client_payload.versions) }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            DESC="${{ github.event.inputs.description }}"
-          else
-            DESC="${{ github.event.client_payload.description }}"
-          fi
-          # Write to a file to safely handle multiline/quotes
-          printf '%s' "$DESC" > /tmp/change_request.txt
-          echo "Change request length: $(wc -c < /tmp/change_request.txt) chars"
-          # Generate a short slug for the branch name
-          SLUG=$(echo "$DESC" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' | cut -c1-50 | sed 's/-$//')
-          echo "slug=$SLUG" >> $GITHUB_OUTPUT
-          echo "branch=ai/update-${SLUG}-$(date +%s)" >> $GITHUB_OUTPUT
+          python3 <<'PYEOF'
+          import os, json, re, time, pathlib
 
-      - name: Run Claude to update the spec
+          VALID_VERSIONS = {"massachusetts", "maine"}
+          event_name = os.environ.get("EVENT_NAME", "")
+
+          if event_name == "workflow_dispatch":
+              desc = os.environ.get("WD_DESCRIPTION", "")
+              versions_raw = os.environ.get("WD_VERSIONS", "massachusetts")
+              versions = [v.strip() for v in versions_raw.split(",") if v.strip() in VALID_VERSIONS]
+          else:
+              desc = os.environ.get("RD_DESCRIPTION", "")
+              versions_raw = os.environ.get("RD_VERSIONS", "null")
+              try:
+                  parsed = json.loads(versions_raw)
+                  versions = [v for v in parsed if isinstance(v, str) and v in VALID_VERSIONS]
+              except Exception:
+                  versions = []
+
+          if not versions:
+              versions = ["massachusetts"]
+
+          pathlib.Path("/tmp/change_request.txt").write_text(desc)
+          pathlib.Path("/tmp/versions.json").write_text(json.dumps(versions))
+
+          print(f"Change request length: {len(desc)} chars")
+          print(f"Versions: {versions}")
+
+          slug = re.sub(r"[^a-z0-9]+", "-", desc.lower())[:50].rstrip("-") or "update"
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"slug={slug}\n")
+              f.write(f"branch=ai/update-{slug}-{int(time.time())}\n")
+          PYEOF
+
+      - name: Run Claude to update the specs
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           python3 <<'PYEOF'
-          import os, sys, json, re, pathlib
+          import os, sys, json, pathlib
           from anthropic import Anthropic
 
           client = Anthropic()
-          spec_path = pathlib.Path("openapi.yaml")
-          if not spec_path.exists():
-              print("ERROR: openapi.yaml not found at repo root")
-              sys.exit(1)
-
-          current_spec = spec_path.read_text()
+          versions = json.loads(pathlib.Path("/tmp/versions.json").read_text())
           change_request = pathlib.Path("/tmp/change_request.txt").read_text()
 
           system_prompt = """You are an expert OpenAPI 3.x specification editor. You will be given:
@@ -79,16 +106,6 @@ jobs:
           - If the request is ambiguous, make a reasonable choice and note it in the explanation
           - The updated_spec must be valid OpenAPI 3.x YAML
           - Always call the submit_spec_update tool. Do not respond in plain text."""
-
-          user_msg = f"""Current OpenAPI spec:
-          ```yaml
-          {current_spec}
-          ```
-
-          Change request:
-          {change_request}
-
-          Apply the change and call the submit_spec_update tool with the result."""
 
           tools = [{
               "name": "submit_spec_update",
@@ -109,58 +126,101 @@ jobs:
               }
           }]
 
-          response = client.messages.create(
-              model="claude-sonnet-4-6",
-              max_tokens=16000,
-              system=system_prompt,
-              tools=tools,
-              tool_choice={"type": "tool", "name": "submit_spec_update"},
-              messages=[{"role": "user", "content": user_msg}]
-          )
+          explanations = []
 
-          # Extract the tool_use block from the response
-          result = None
-          for block in response.content:
-              if getattr(block, "type", None) == "tool_use" and block.name == "submit_spec_update":
-                  result = block.input
-                  break
+          for version in versions:
+              spec_path = pathlib.Path(f"specs/{version}.yaml")
+              if not spec_path.exists():
+                  print(f"ERROR: specs/{version}.yaml not found")
+                  sys.exit(1)
 
-          if result is None:
-              print("ERROR: Claude did not call the submit_spec_update tool.")
-              print(f"Stop reason: {response.stop_reason}")
+              current_spec = spec_path.read_text()
+              user_msg = f"""Current OpenAPI spec (version: {version}):
+          ```yaml
+          {current_spec}
+          ```
+
+          Change request:
+          {change_request}
+
+          Apply the change and call the submit_spec_update tool with the result."""
+
+              response = client.messages.create(
+                  model="claude-sonnet-4-6",
+                  max_tokens=16000,
+                  system=system_prompt,
+                  tools=tools,
+                  tool_choice={"type": "tool", "name": "submit_spec_update"},
+                  messages=[{"role": "user", "content": user_msg}]
+              )
+
+              result = None
               for block in response.content:
-                  print(f"  Block type: {getattr(block, 'type', '?')}")
-              sys.exit(1)
+                  if getattr(block, "type", None) == "tool_use" and block.name == "submit_spec_update":
+                      result = block.input
+                      break
 
-          # Write the updated spec
-          spec_path.write_text(result["updated_spec"])
-          pathlib.Path("/tmp/explanation.txt").write_text(result["explanation"])
-          print("Spec updated. Explanation:")
-          print(result["explanation"])
+              if result is None:
+                  print(f"ERROR: Claude did not call submit_spec_update for {version}.")
+                  print(f"Stop reason: {response.stop_reason}")
+                  sys.exit(1)
+
+              spec_path.write_text(result["updated_spec"])
+              explanations.append(f"**{version}:** {result['explanation']}")
+              print(f"specs/{version}.yaml updated.")
+
+          combined = "\n\n".join(explanations)
+          pathlib.Path("/tmp/explanation.txt").write_text(combined)
+          print("All specs updated. Explanations:")
+          print(combined)
           PYEOF
 
-      - name: Validate the updated spec
+      - name: Validate the updated specs
         run: |
           pip install openapi-spec-validator
-          python3 -c "
-          from openapi_spec_validator import validate_spec
-          import yaml
-          spec = yaml.safe_load(open('openapi.yaml'))
-          validate_spec(spec)
-          print('Spec is valid OpenAPI 3.x')
-          " || { echo 'Validation failed but continuing (demo).'; true; }
+          python3 <<'PYEOF'
+          import json, pathlib, yaml
+          try:
+              from openapi_spec_validator import validate_spec
+          except ImportError:
+              print("openapi-spec-validator not available, skipping validation")
+              exit(0)
+
+          versions = json.loads(pathlib.Path("/tmp/versions.json").read_text())
+          for version in versions:
+              spec_path = f"specs/{version}.yaml"
+              try:
+                  spec = yaml.safe_load(open(spec_path))
+                  validate_spec(spec)
+                  print(f"specs/{version}.yaml is valid OpenAPI 3.x")
+              except Exception as e:
+                  print(f"Validation failed for {version}: {e} — continuing (demo).")
+          PYEOF
 
       - name: Check if there are changes
         id: diff
         run: |
-          if git diff --quiet openapi.yaml; then
-            echo "changed=false" >> $GITHUB_OUTPUT
-            echo "No changes produced by Claude. Exiting."
-          else
-            echo "changed=true" >> $GITHUB_OUTPUT
-            echo "Changes detected."
-            git diff --stat openapi.yaml
-          fi
+          python3 <<'PYEOF'
+          import json, subprocess, pathlib, os
+
+          versions = json.loads(pathlib.Path("/tmp/versions.json").read_text())
+          changed = []
+          for version in versions:
+              spec_path = f"specs/{version}.yaml"
+              r = subprocess.run(["git", "diff", "--quiet", spec_path], capture_output=True)
+              if r.returncode != 0:
+                  changed.append(spec_path)
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"changed={'true' if changed else 'false'}\n")
+
+          if changed:
+              print("Changes detected in:", ", ".join(changed))
+              for path in changed:
+                  subprocess.run(["git", "diff", "--stat", path])
+          else:
+              print("No changes produced by Claude. Exiting.")
+          PYEOF
 
       - name: Create branch and commit
         if: steps.diff.outputs.changed == 'true'
@@ -168,7 +228,16 @@ jobs:
           git config user.name "Chalk It Up AI Bot"
           git config user.email "bot@chalk-it-up.local"
           git checkout -b "${{ steps.req.outputs.branch }}"
-          git add openapi.yaml
+          python3 <<'PYEOF'
+          import json, subprocess, pathlib
+
+          versions = json.loads(pathlib.Path("/tmp/versions.json").read_text())
+          for version in versions:
+              spec_path = f"specs/{version}.yaml"
+              r = subprocess.run(["git", "diff", "--quiet", spec_path], capture_output=True)
+              if r.returncode != 0:
+                  subprocess.run(["git", "add", spec_path])
+          PYEOF
           EXPLANATION=$(cat /tmp/explanation.txt)
           REQUEST=$(cat /tmp/change_request.txt)
           git commit -m "AI: ${EXPLANATION:0:72}" -m "Change request: $REQUEST" -m "$EXPLANATION"
@@ -182,18 +251,20 @@ jobs:
         run: |
           EXPLANATION=$(cat /tmp/explanation.txt)
           REQUEST=$(cat /tmp/change_request.txt)
+          VERSIONS_LIST=$(python3 -c "import json,pathlib; v=json.loads(pathlib.Path('/tmp/versions.json').read_text()); print(', '.join(v))")
           PR_BODY=$(cat <<EOF
           ## AI-drafted documentation update
 
           **Change request:**
           > $REQUEST
 
+          **Versions updated:** $VERSIONS_LIST
+
           **What Claude changed:**
           $EXPLANATION
 
           ---
           This PR was opened automatically by the AI documentation workflow.
-          Spec file updated: \`openapi.yaml\`
           EOF
           )
           PR_URL=$(gh pr create \

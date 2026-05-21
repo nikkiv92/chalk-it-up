@@ -1,11 +1,14 @@
 openapi: 3.1.0
 info:
   title: Chalk It Up Membership API
-  version: 1.0.0
+  version: 2.0.0
   description: |
     The Chalk It Up gym's API for managing climbing gym memberships, member accounts, waivers,
     passes, and facility access. Supports registration, plan management,
     check-in, and billing operations.
+
+    **v2 additions:** Member preferences endpoint for personalized notification and
+    display settings.
   contact:
     name: Gym API Support
     email: api-support@climbinggym.example.com
@@ -13,9 +16,9 @@ info:
     name: MIT
 
 servers:
-  - url: https://api.climbinggym.example.com/v1
+  - url: https://api.climbinggym.example.com/v2
     description: Production
-  - url: https://staging-api.climbinggym.example.com/v1
+  - url: https://staging-api.climbinggym.example.com/v2
     description: Staging
 
 tags:
@@ -35,6 +38,8 @@ tags:
     description: Payment methods and invoices
   - name: Emergency Contacts
     description: Member emergency contact information
+  - name: Preferences
+    description: Member notification and display preferences (new in v2)
 
 # ---------------------------------------------------------------------------
 # PATHS
@@ -863,6 +868,68 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  # ── Preferences (new in v2) ───────────────────────────────────────────────
+
+  /members/me/preferences:
+    get:
+      operationId: getMyPreferences
+      tags: [Preferences]
+      summary: Get the authenticated member's preferences
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Member preferences
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberPreferences'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    patch:
+      operationId: updateMyPreferences
+      tags: [Preferences]
+      summary: Update the authenticated member's preferences
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberPreferences'
+      responses:
+        '200':
+          description: Updated preferences
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberPreferences'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /members/{memberId}/preferences:
+    parameters:
+      - $ref: '#/components/parameters/MemberIdParam'
+    get:
+      operationId: getMemberPreferences
+      tags: [Preferences]
+      summary: Get a member's preferences (staff only)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Member preferences
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberPreferences'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
 # ---------------------------------------------------------------------------
 # COMPONENTS
 # ---------------------------------------------------------------------------
@@ -1007,7 +1074,7 @@ components:
         first_name:
           type: string
           maxLength: 100
-          example: Patrick
+          example: Johnny
         last_name:
           type: string
           maxLength: 100
@@ -1096,6 +1163,9 @@ components:
         notes:
           type: string
           description: Internal staff notes (staff-only field)
+        preferences:
+          $ref: '#/components/schemas/MemberPreferences'
+          description: Member preferences (included when explicitly requested, new in v2)
         created_at:
           type: string
           format: date-time
@@ -1118,6 +1188,36 @@ components:
         photo_url:
           type: string
           format: uri
+
+    # ── Member Preferences (new in v2) ───────────────────────────────────────
+
+    MemberPreferences:
+      type: object
+      properties:
+        language:
+          type: string
+          description: Preferred display language (BCP 47 tag)
+          example: en-US
+        theme:
+          type: string
+          enum: [system, light, dark]
+          default: system
+        notify_check_in:
+          type: boolean
+          description: Send a push notification on each gym check-in
+          default: false
+        notify_billing:
+          type: boolean
+          description: Send email notifications for invoices and payment events
+          default: true
+        notify_announcements:
+          type: boolean
+          description: Receive gym announcements and promotional emails
+          default: true
+        marketing_opt_in:
+          type: boolean
+          description: Opt in to third-party marketing communications
+          default: false
 
     # ── Emergency Contact ────────────────────────────────────────────────────
 

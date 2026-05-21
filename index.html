@@ -29,6 +29,16 @@
       border-bottom: 1px solid var(--border);
       box-shadow: 0 1px 3px rgba(0,0,0,0.04);
     }
+    .version-select {
+      appearance: none; -webkit-appearance: none;
+      background: rgba(255,255,255,0.75) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%234432b9'/%3E%3C/svg%3E") no-repeat right 10px center;
+      border: 1px solid rgba(68,50,185,0.3); border-radius: 8px;
+      padding: 8px 32px 8px 12px; font: inherit; font-size: 13px; font-weight: 600;
+      color: var(--accent-dark); cursor: pointer;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .version-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(68,50,185,0.15); }
+    .topbar-center { display: flex; align-items: center; gap: 12px; }
     .brand {
       display: flex; align-items: center; gap: 10px;
       font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 18px;
@@ -157,6 +167,9 @@
       Chalk It Up &mdash; Climbing Gym Membership API
       <span class="sub">Live AI-driven documentation demo</span>
     </div>
+    <div class="topbar-center">
+      <select id="versionSelect" class="version-select" onchange="onVersionChange(this.value)" aria-label="API version"></select>
+    </div>
     <button class="propose-btn" onclick="openModal()">
       Propose a change
     </button>
@@ -209,6 +222,11 @@
         </div>
       </div>
 
+      <div class="field">
+        <label>Apply to version(s)</label>
+        <div id="versionCheckboxes" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:4px;"></div>
+      </div>
+
       <div class="actions">
         <button class="btn-secondary" onclick="closeModal()">Cancel</button>
         <button class="btn-primary" id="submitBtn" onclick="submitProposal()">Submit to AI</button>
@@ -240,16 +258,21 @@
     const WORKER_URL = "https://chalk-it-up-proxy.chalkitup.workers.dev/propose";
     const REPO_OWNER = "nikkiv92";
     const REPO_NAME = "chalk-it-up";
-    const SPEC_URL = "./openapi.yaml";
+    const VERSIONS = [
+      { label: "massachusetts — Stable", value: "massachusetts", url: "./specs/massachusetts.yaml" },
+      { label: "maine — Beta",           value: "maine",         url: "./specs/maine.yaml" }
+    ];
+    let activeVersion = VERSIONS[0];
     // ====================
 
     let currentSpecSha = null;
     let pollTimer = null;
 
-    function renderRedoc() {
+    function renderRedoc(specUrl) {
+      specUrl = specUrl || activeVersion.url;
       // Cache-bust by appending the latest known SHA so updates are picked up.
       const bust = currentSpecSha ? `?v=${currentSpecSha}` : `?v=${Date.now()}`;
-      Redoc.init(SPEC_URL + bust, {
+      Redoc.init(specUrl + bust, {
         scrollYOffset: 60,
         hideDownloadButton: false,
         theme: {
@@ -264,11 +287,19 @@
 
     async function fetchCurrentSha() {
       try {
-        const r = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/commits/main`);
+        const r = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/specs/${activeVersion.value}.yaml`);
         if (!r.ok) return null;
         const data = await r.json();
         return data.sha;
       } catch (e) { return null; }
+    }
+
+    function onVersionChange(value) {
+      const v = VERSIONS.find(v => v.value === value);
+      if (!v) return;
+      activeVersion = v;
+      currentSpecSha = null;
+      renderRedoc(v.url);
     }
 
     function openModal() { document.getElementById("modalBackdrop").classList.add("open"); }
@@ -304,6 +335,14 @@
         return;
       }
 
+      const selectedVersions = VERSIONS
+        .filter(v => document.getElementById(`v-check-${v.value}`)?.checked)
+        .map(v => v.value);
+      if (!selectedVersions.length) {
+        alert("Please select at least one version to apply this change to.");
+        return;
+      }
+
       // Capture baseline SHA so we know when the workflow has actually landed a new commit.
       currentSpecSha = await fetchCurrentSha();
 
@@ -326,7 +365,8 @@
               change_type: document.getElementById("structType").value,
               target: document.getElementById("structTarget").value,
               details: document.getElementById("structDetails").value
-            } : null
+            } : null,
+            versions: selectedVersions
           })
         });
 
@@ -428,6 +468,29 @@
 
     // Initial render
     (async function init() {
+      // Populate version dropdown
+      const sel = document.getElementById("versionSelect");
+      VERSIONS.forEach(v => {
+        const opt = document.createElement("option");
+        opt.value = v.value;
+        opt.textContent = v.label;
+        sel.appendChild(opt);
+      });
+
+      // Populate version checkboxes in modal (all checked by default)
+      const container = document.getElementById("versionCheckboxes");
+      VERSIONS.forEach(v => {
+        const id = `v-check-${v.value}`;
+        const wrap = document.createElement("label");
+        wrap.style.cssText = "display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;";
+        const cb = document.createElement("input");
+        cb.type = "checkbox"; cb.id = id; cb.value = v.value; cb.checked = true;
+        cb.style.accentColor = "var(--accent)";
+        wrap.appendChild(cb);
+        wrap.appendChild(document.createTextNode(v.label));
+        container.appendChild(wrap);
+      });
+
       currentSpecSha = await fetchCurrentSha();
       renderRedoc();
     })();

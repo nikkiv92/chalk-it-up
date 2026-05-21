@@ -1007,7 +1007,7 @@ components:
         first_name:
           type: string
           maxLength: 100
-          example: Patrick
+          example: Johnny
         last_name:
           type: string
           maxLength: 100
