@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tutorial — Chalk It Up API</title>
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,600,700|Roboto:300,400,700" rel="stylesheet" />
+  <style>
+    :root {
+      --accent: #4432b9;
+      --accent-dark: #551bb1;
+      --ink: #1f2330;
+      --muted: #6b7280;
+      --bg: #ffffff;
+      --panel: #fafbfd;
+      --border: #e5e7eb;
+      --code-bg: #f3f4f6;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--ink); background: var(--bg); }
+
+    .topbar {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 24px;
+      background: linear-gradient(90deg, #fff 0%, #b398d3 60%, #a284d6 100%);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .brand {
+      display: flex; align-items: center; gap: 10px;
+      font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 18px;
+      text-decoration: none; color: inherit;
+    }
+    .brand .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); display: inline-block; }
+    .brand .sub { font-weight: 400; color: var(--muted); font-size: 13px; margin-left: 8px; }
+    .back-btn {
+      background: white; color: var(--accent-dark); border: 1px solid var(--border);
+      padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 13px;
+      cursor: pointer; text-decoration: none;
+    }
+    .back-btn:hover { border-color: var(--accent); }
+
+    .content {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    .content h1 {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 28px; font-weight: 700;
+      margin: 0 0 8px;
+    }
+    .content h2 {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 18px; font-weight: 600;
+      margin: 40px 0 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .content h3 {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 15px; font-weight: 600;
+      margin: 24px 0 8px;
+    }
+    .content p { line-height: 1.7; margin: 0 0 16px; }
+    .content ul, .content ol { padding-left: 24px; margin: 0 0 16px; line-height: 1.7; }
+    .content li { margin-bottom: 4px; }
+    .content a { color: var(--accent-dark); }
+
+    .content pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      overflow-x: auto;
+      margin: 0 0 20px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .content code {
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 13px;
+    }
+    .content p code, .content li code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 5px;
+    }
+
+    .content table {
+      width: 100%; border-collapse: collapse; margin: 0 0 20px; font-size: 14px;
+    }
+    .content th {
+      text-align: left; padding: 8px 12px;
+      background: var(--panel); border-bottom: 2px solid var(--border);
+      font-family: 'Montserrat', sans-serif; font-size: 12px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted);
+    }
+    .content td {
+      padding: 10px 12px; border-bottom: 1px solid var(--border);
+    }
+
+    #loading { color: var(--muted); padding: 48px 24px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="brand" href="./index.html">
+      <span class="dot"></span>
+      Chalk It Up &mdash; Climbing Gym Membership API
+      <span class="sub">Live AI documentation demo</span>
+    </a>
+    <a class="back-btn" href="./index.html">&larr; API Reference</a>
+  </div>
+
+  <div class="content">
+    <div id="loading">Loading tutorial&hellip;</div>
+    <div id="body"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    fetch("./tutorial.md")
+      .then(r => {
+        if (!r.ok) throw new Error(r.status);
+        return r.text();
+      })
+      .then(md => {
+        document.getElementById("loading").remove();
+        document.getElementById("body").innerHTML = marked.parse(md);
+        const h1 = document.querySelector("#body h1");
+        if (h1) document.title = h1.textContent + " — Chalk It Up API";
+      })
+      .catch(e => {
+        document.getElementById("loading").textContent = "Failed to load tutorial: " + e.message;
+      });
+  </script>
+</body>
+</html>

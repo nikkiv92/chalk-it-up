@@ -39,6 +39,32 @@
     }
     .version-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(68,50,185,0.15); }
     .topbar-center { display: flex; align-items: center; gap: 12px; }
+
+    /* Tutorials dropdown */
+    .nav-dropdown { position: relative; }
+    .nav-dropdown-btn {
+      background: none; border: 1px solid rgba(68,50,185,0.3); border-radius: 8px;
+      padding: 8px 14px; font: inherit; font-size: 13px; font-weight: 600;
+      color: var(--accent-dark); cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+    .nav-dropdown-btn:hover { border-color: var(--accent); background: rgba(255,255,255,0.6); }
+    .nav-dropdown-btn svg { transition: transform 0.15s ease; }
+    .nav-dropdown.open .nav-dropdown-btn svg { transform: rotate(180deg); }
+    .nav-dropdown-menu {
+      display: none; position: absolute; top: calc(100% + 6px); left: 0;
+      background: white; border: 1px solid var(--border); border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12); min-width: 220px; z-index: 500;
+      padding: 4px;
+    }
+    .nav-dropdown.open .nav-dropdown-menu { display: block; }
+    .nav-dropdown-menu a {
+      display: block; padding: 9px 14px; border-radius: 7px;
+      text-decoration: none; font-size: 13px; color: var(--ink);
+      transition: background 0.1s ease;
+    }
+    .nav-dropdown-menu a:hover { background: var(--panel); color: var(--accent-dark); }
     .brand {
       display: flex; align-items: center; gap: 10px;
       font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 18px;
@@ -169,6 +195,17 @@
     </div>
     <div class="topbar-center">
       <select id="versionSelect" class="version-select" onchange="onVersionChange(this.value)" aria-label="API version"></select>
+      <div class="nav-dropdown" id="tutorialsDropdown">
+        <button class="nav-dropdown-btn" onclick="toggleDropdown()" aria-haspopup="true">
+          Tutorials
+          <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0 0l5 6 5-6z" fill="#551bb1"/>
+          </svg>
+        </button>
+        <div class="nav-dropdown-menu" role="menu">
+          <a href="./tutorial.html" role="menuitem">Fetch member profile</a>
+        </div>
+      </div>
     </div>
     <button class="propose-btn" onclick="openModal()">
       Propose a change
@@ -301,6 +338,14 @@
       currentSpecSha = null;
       renderRedoc(v.url);
     }
+
+    function toggleDropdown() {
+      document.getElementById("tutorialsDropdown").classList.toggle("open");
+    }
+    document.addEventListener("click", e => {
+      const dd = document.getElementById("tutorialsDropdown");
+      if (!dd.contains(e.target)) dd.classList.remove("open");
+    });
 
     function openModal() { document.getElementById("modalBackdrop").classList.add("open"); }
     function closeModal() { document.getElementById("modalBackdrop").classList.remove("open"); }
