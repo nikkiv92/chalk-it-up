@@ -532,7 +532,10 @@
         cb.type = "checkbox"; cb.id = id; cb.value = v.value; cb.checked = true;
         cb.style.accentColor = "var(--accent)";
         wrap.appendChild(cb);
-        wrap.appendChild(document.createTextNode(v.label));
+        const span = document.createElement("span");
+        span.style.whiteSpace = "nowrap";
+        span.textContent = v.label;
+        wrap.appendChild(span);
         container.appendChild(wrap);
       });
 
