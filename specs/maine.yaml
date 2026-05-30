@@ -51,7 +51,7 @@ paths:
   /auth/register:
     post:
       operationId: registerMember
-      tags: [Auth]
+      tags: [Members]
       summary: Register a new member account
       description: Creates a member account and sends an email verification link.
       requestBody:
