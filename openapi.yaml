@@ -142,6 +142,7 @@ paths:
                 email:
                   type: string
                   format: email
+                  description: The member's email address where they will receive invoices, event sign up confirmations, reminders, and other correspondence.
       responses:
         '202':
           description: Reset email sent if account exists
@@ -1006,17 +1007,21 @@ components:
       properties:
         first_name:
           type: string
+          description: The member's legal first name.
           maxLength: 100
           example: Patrick
         last_name:
           type: string
+          description: The member's legal last name.
           maxLength: 100
           example: Rose
         email:
           type: string
           format: email
+          description: The member's email address where they will receive invoices, event sign up confirmations, reminders, and other correspondence.
         password:
           type: string
+          description: Unique password that the member will use to log into their Chalk It Up gym account.
           minLength: 8
         date_of_birth:
           type: string
@@ -1037,8 +1042,10 @@ components:
         email:
           type: string
           format: email
+          description: The member's email address where they will receive invoices, event sign up confirmations, reminders, and other correspondence.
         password:
           type: string
+          description: Unique password that the member will use to log into their Chalk It Up gym account.
 
     AuthResponse:
       type: object
@@ -1070,11 +1077,14 @@ components:
           format: uuid
         first_name:
           type: string
+          description: The member's legal first name.
         last_name:
           type: string
+          description: The member's legal last name.
         email:
           type: string
           format: email
+          description: The member's email address where they will receive invoices, event sign up confirmations, reminders, and other correspondence.
         phone:
           type: string
         date_of_birth:
@@ -1108,8 +1118,10 @@ components:
       properties:
         first_name:
           type: string
+          description: The member's legal first name.
         last_name:
           type: string
+          description: The member's legal last name.
         phone:
           type: string
         date_of_birth:
@@ -1135,6 +1147,7 @@ components:
         email:
           type: string
           format: email
+          description: The member's email address where they will receive invoices, event sign up confirmations, reminders, and other correspondence.
 
     EmergencyContact:
       allOf:
@@ -1428,6 +1441,7 @@ components:
         email:
           type: string
           format: email
+          description: The member's email address where they will receive invoices, event sign up confirmations, reminders, and other correspondence.
         pass_id:
           type: string
           format: uuid
