@@ -11,14 +11,14 @@ info:
     display settings.
   contact:
     name: Gym API Support
-    email: api-support@climbinggym.example.com
+    email: api-support@chalkitupgym.example.com
   license:
     name: MIT
 
 servers:
-  - url: https://api.climbinggym.example.com/v2
+  - url: https://api.chalkitupgym.example.com/v2
     description: Production
-  - url: https://staging-api.climbinggym.example.com/v2
+  - url: https://staging-api.chalkitupgym.example.com/v2
     description: Staging
 
 tags:
