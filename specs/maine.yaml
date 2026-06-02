@@ -203,7 +203,7 @@ paths:
     get:
       operationId: listMembers
       tags: [Members]
-      summary: List all members (staff only)
+      summary: List all members
       security:
         - BearerAuth: []
       parameters:
@@ -296,7 +296,7 @@ paths:
     get:
       operationId: getMember
       tags: [Members]
-      summary: Get a member by ID (staff only)
+      summary: Get a member by ID
       security:
         - BearerAuth: []
       responses:
@@ -311,7 +311,7 @@ paths:
     patch:
       operationId: updateMember
       tags: [Members]
-      summary: Update a member's profile (staff only)
+      summary: Update a member's profile
       security:
         - BearerAuth: []
       requestBody:
@@ -918,7 +918,7 @@ paths:
     get:
       operationId: getMemberPreferences
       tags: [Preferences]
-      summary: Get a member's preferences (staff only)
+      summary: Get a member's preferences
       security:
         - BearerAuth: []
       responses:
