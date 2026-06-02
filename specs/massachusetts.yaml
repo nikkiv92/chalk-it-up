@@ -1033,7 +1033,7 @@ components:
         referred_by_member_id:
           type: string
           format: uuid
-          description: Optional referral from an existing member.
+          description: If the new member was referred by an existing member, the referring member's unique `member.id`.
 
     LoginRequest:
       type: object
