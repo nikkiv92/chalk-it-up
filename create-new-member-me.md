@@ -1,6 +1,6 @@
 # Tutorial: Register a New Member (Maine locations)
 
-This tutorial walks through calling the `POST /members/register` endpoint (`registerMember` operation) to create a new member account at Chalk It Up locations in Maine. You'll see a basic registration, then a referral scenario where the new member was brought in by an existing one.
+This tutorial walks through calling the `POST /v1/members/register` endpoint (`registerMember` operation) to create a new member account at Chalk It Up locations in Maine. You'll see a basic registration, then a referral scenario where the new member was brought in by an existing one.
 
 ## Prerequisites
 
@@ -13,10 +13,10 @@ This tutorial walks through calling the `POST /members/register` endpoint (`regi
 
 ## Step 1: Register a new member
 
-Send a `POST` request to the `/members/register` endpoint with the new member's details. All fields in the example below are required unless marked optional.
+Send a `POST` request to the `/v1/members/register` endpoint with the new member's details. All fields in the example below are required unless marked optional.
 
 ```json
-POST /members/register
+POST /v1/members/register
 Content-Type: application/json
 
 {
@@ -55,7 +55,7 @@ Content-Type: application/json
 
 The new member's status starts as `pending_verification`. A verification email is sent automatically to the address provided — the member must click the link before their status moves to `active`.
 
-The response also includes an `access_token` and `refresh_token` so the member can be logged in immediately without a separate call to `POST /auth/login`.
+The response also includes an `access_token` and `refresh_token` so the member can be logged in immediately without a separate call to `POST /v1/auth/login`.
 
 ---
 
@@ -68,7 +68,7 @@ If the new member was referred by an existing member, you can pass `referred_by_
 If you don't already have the referring member's `id`, use `GET /members` with the `search` parameter to look them up by name or email. This endpoint requires a staff token.
 
 ```json
-GET /members?search=Patrick+Rose
+GET /v1/members?search=Patrick+Rose
 Authorization: Bearer <staff_access_token>
 ```
 
@@ -102,7 +102,7 @@ Copy the `id` from the matching result — `"a1b2c3d4-9e8f-47ab-bc12-d3e45678901
 ### Registration request with referral
 
 ```json
-POST /members/register
+POST /v1/members/register
 Content-Type: application/json
 
 {
@@ -151,6 +151,6 @@ The response shape is identical to Step 1. The referral is recorded on the accou
 ## Next steps
 
 - Prompt the new member to verify their email before attempting any authenticated actions
-- Subscribe them to a membership plan via `POST /members/me/membership`
-- Have them sign the liability waiver via `POST /members/me/waivers`
+- Subscribe them to a membership plan via `POST /v1/members/me/membership`
+- Have them sign the liability waiver via `POST /v1/members/me/waivers`
 - View the full [API reference](./index.html) for all available operations
