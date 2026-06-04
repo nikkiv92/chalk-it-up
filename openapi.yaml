@@ -43,7 +43,7 @@ paths:
 
   # ── Auth ──────────────────────────────────────────────────────────────────
 
-  /auth/register:
+  /members/register:
     post:
       operationId: registerMember
       tags: [Members]

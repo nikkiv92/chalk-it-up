@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tutorials — Chalk It Up API</title>
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,600,700|Roboto:300,400,700" rel="stylesheet" />
+  <style>
+    :root {
+      --accent: #4432b9;
+      --accent-dark: #551bb1;
+      --ink: #1f2330;
+      --muted: #6b7280;
+      --bg: #ffffff;
+      --panel: #fafbfd;
+      --border: #e5e7eb;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--ink); background: var(--bg); }
+
+    .topbar {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 24px;
+      background: linear-gradient(90deg, #fff 0%, #b398d3 60%, #a284d6 100%);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .brand {
+      display: flex; align-items: center; gap: 10px;
+      font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 18px;
+      text-decoration: none; color: inherit;
+    }
+    .brand .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); display: inline-block; }
+    .brand .sub { font-weight: 400; color: var(--muted); font-size: 13px; margin-left: 8px; }
+    .back-btn {
+      background: white; color: var(--accent-dark); border: 1px solid var(--border);
+      padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 13px;
+      cursor: pointer; text-decoration: none;
+    }
+    .back-btn:hover { border-color: var(--accent); }
+
+    .content {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 56px 24px 80px;
+    }
+
+    .page-header { margin-bottom: 40px; }
+    .page-header h1 {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 28px; font-weight: 700;
+      margin: 0 0 10px;
+    }
+    .page-header p {
+      color: var(--muted); font-size: 15px; line-height: 1.6; margin: 0;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px;
+      background: var(--panel);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .card:hover {
+      box-shadow: 0 6px 24px rgba(68,50,185,0.1);
+      border-color: rgba(68,50,185,0.3);
+    }
+
+    .card-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      width: fit-content;
+    }
+    .badge-stable { background: #d1fae5; color: #065f46; }
+    .badge-beta   { background: #fef3c7; color: #92400e; }
+
+    .card-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 18px; font-weight: 700;
+      margin: 0;
+      color: var(--ink);
+    }
+    .card-description {
+      font-size: 14px; line-height: 1.65; color: var(--muted);
+      margin: 0; flex: 1;
+    }
+
+    .card-meta {
+      font-size: 12px; color: var(--muted);
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .card-meta span { display: flex; align-items: center; gap: 6px; }
+
+    .card-tutorials {
+      list-style: none; margin: 0; padding: 0;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .card-tutorials li a {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 14px; color: var(--accent-dark);
+      text-decoration: none; font-weight: 500;
+      padding: 8px 12px;
+      background: white; border: 1px solid var(--border);
+      border-radius: 8px;
+      transition: background 0.1s ease, border-color 0.1s ease;
+    }
+    .card-tutorials li a:hover {
+      background: #f5f3fb;
+      border-color: rgba(68,50,185,0.3);
+    }
+    .card-tutorials li a::before {
+      content: "→";
+      font-size: 13px;
+      color: var(--accent);
+    }
+
+    .card-footer {
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .card-footer a {
+      color: var(--accent-dark); text-decoration: none; font-weight: 600;
+    }
+    .card-footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="brand" href="./index.html">
+      <span class="dot"></span>
+      Chalk It Up &mdash; Climbing Gym Membership API
+      <span class="sub">Live AI documentation demo</span>
+    </a>
+    <a class="back-btn" href="./index.html">&larr; API Reference</a>
+  </div>
+
+  <div class="content">
+    <div class="page-header">
+      <h1>Tutorials</h1>
+      <p>Step-by-step integration guides for developers building on the Chalk It Up Membership API. Choose the spec version for your gym's location.</p>
+    </div>
+
+    <div class="cards">
+
+      <div class="card">
+        <span class="card-badge badge-stable">Massachusetts — Stable</span>
+        <h2 class="card-title">Integrating with MA Gyms</h2>
+        <p class="card-description">
+          Guides for developers integrating with Chalk It Up's Massachusetts locations. Uses the v1 API, the stable production spec.
+        </p>
+        <ul class="card-tutorials">
+          <li><a href="./tutorial.html?location=ma">Register a new member</a></li>
+        </ul>
+        <div class="card-footer">
+          <a href="./index.html?version=massachusetts">View MA API reference &rarr;</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <span class="card-badge badge-beta">Maine — Beta</span>
+        <h2 class="card-title">Integrating with ME Gyms</h2>
+        <p class="card-description">
+          Guides for developers integrating with Chalk It Up's Maine locations. Uses the v2 API, which adds member preferences for personalized notifications and display settings.
+        </p>
+        <ul class="card-tutorials">
+          <li><a href="./tutorial.html?location=me">Register a new member</a></li>
+        </ul>
+        <div class="card-footer">
+          <a href="./index.html?version=maine">View ME API reference &rarr;</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

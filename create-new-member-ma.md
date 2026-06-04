@@ -1,6 +1,6 @@
-# Tutorial: Register a New Member
+# Tutorial: Register a New Member (Massachusetts locations)
 
-This tutorial walks through calling the `POST /auth/register` endpoint (`registerMember` operation) to create a new member account. You'll see a basic registration, then a referral scenario where the new member was brought in by an existing one.
+This tutorial walks through calling the `POST /members/register` endpoint (`registerMember` operation) to create a new member account at Chalk It Up locations in Massachusetts. You'll see a basic registration, then a referral scenario where the new member was brought in by an existing one.
 
 ## Prerequisites
 
@@ -13,10 +13,10 @@ This tutorial walks through calling the `POST /auth/register` endpoint (`registe
 
 ## Step 1: Register a new member
 
-Send a `POST` request to `/auth/register` with the new member's details. All fields in the example below are required unless marked optional.
+Send a `POST` request to the `/members/register` endpoint with the new member's details. All fields in the example below are required unless marked optional.
 
 ```json
-POST /auth/register
+POST /members/register
 Content-Type: application/json
 
 {
@@ -102,7 +102,7 @@ Copy the `id` from the matching result — `"a1b2c3d4-9e8f-47ab-bc12-d3e45678901
 ### Registration request with referral
 
 ```json
-POST /auth/register
+POST /members/register
 Content-Type: application/json
 
 {
