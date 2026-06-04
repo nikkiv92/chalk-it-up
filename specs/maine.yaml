@@ -4,7 +4,7 @@ info:
   version: 2.0.0
   description: |
     The Chalk It Up gym's API for managing climbing gym memberships, member accounts, waivers,
-    passes, and facility access. Supports registration, plan management,
+    passes, and facility access for gym locations in Maine. Supports registration, plan management,
     check-in, and billing operations.
 
     **v2 additions:** Member preferences endpoint for personalized notification and
@@ -48,7 +48,7 @@ paths:
 
   # ── Auth ──────────────────────────────────────────────────────────────────
 
-  /auth/register:
+  /members/register:
     post:
       operationId: registerMember
       tags: [Members]
