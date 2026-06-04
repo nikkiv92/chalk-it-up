@@ -1,14 +1,11 @@
 openapi: 3.1.0
 info:
   title: Chalk It Up Membership API
-  version: 2.0.0
+  version: 1.0.0
   description: |
     The Chalk It Up gym's API for managing climbing gym memberships, member accounts, waivers,
     passes, and facility access for gym locations in Maine. Supports registration, plan management,
     check-in, and billing operations.
-
-    **v2 additions:** Member preferences endpoint for personalized notification and
-    display settings.
   contact:
     name: Gym API Support
     email: api-support@chalkitupgym.example.com
@@ -16,9 +13,9 @@ info:
     name: MIT
 
 servers:
-  - url: https://api.chalkitupgym.example.com/v2
+  - url: https://me.api.chalkitupgym.example.com
     description: Production
-  - url: https://staging-api.chalkitupgym.example.com/v2
+  - url: https://staging.me.api.chalkitupgym.example.com
     description: Staging
 
 tags:
@@ -39,8 +36,7 @@ tags:
   - name: Emergency Contacts
     description: Member emergency contact information
   - name: Preferences
-    description: Member notification and display preferences (new in v2)
-
+    description: Member notification and display preferences
 # ---------------------------------------------------------------------------
 # PATHS
 # ---------------------------------------------------------------------------
@@ -48,7 +44,7 @@ paths:
 
   # ── Auth ──────────────────────────────────────────────────────────────────
 
-  /members/register:
+  /v1/members/register:
     post:
       operationId: registerMember
       tags: [Members]
@@ -72,7 +68,7 @@ paths:
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
 
-  /auth/login:
+  /v1/auth/login:
     post:
       operationId: login
       tags: [Auth]
@@ -93,7 +89,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /auth/logout:
+  /v1/auth/logout:
     post:
       operationId: logout
       tags: [Auth]
@@ -106,7 +102,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /auth/refresh:
+  /v1/auth/refresh:
     post:
       operationId: refreshToken
       tags: [Auth]
@@ -131,7 +127,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /auth/password/reset-request:
+  /v1/auth/password/reset-request:
     post:
       operationId: requestPasswordReset
       tags: [Auth]
@@ -152,7 +148,7 @@ paths:
         '202':
           description: Reset email sent if account exists
 
-  /auth/password/reset:
+  /v1/auth/password/reset:
     post:
       operationId: resetPassword
       tags: [Auth]
@@ -176,7 +172,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /auth/email/verify:
+  /v1/auth/email/verify:
     post:
       operationId: verifyEmail
       tags: [Auth]
@@ -199,7 +195,7 @@ paths:
 
   # ── Members ───────────────────────────────────────────────────────────────
 
-  /members:
+  /v1/members:
     get:
       operationId: listMembers
       tags: [Members]
@@ -237,7 +233,7 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
-  /members/me:
+  /v1/members/me:
     get:
       operationId: getMyProfile
       tags: [Members]
@@ -290,7 +286,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /members/{memberId}:
+  /v1/members/{memberId}:
     parameters:
       - $ref: '#/components/parameters/MemberIdParam'
     get:
@@ -332,7 +328,7 @@ paths:
 
   # ── Emergency Contacts ────────────────────────────────────────────────────
 
-  /members/me/emergency-contacts:
+  /v1/members/me/emergency-contacts:
     get:
       operationId: listMyEmergencyContacts
       tags: [Emergency Contacts]
@@ -368,7 +364,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/EmergencyContact'
 
-  /members/me/emergency-contacts/{contactId}:
+  /v1/members/me/emergency-contacts/{contactId}:
     parameters:
       - name: contactId
         in: path
@@ -409,7 +405,7 @@ paths:
 
   # ── Waivers ───────────────────────────────────────────────────────────────
 
-  /waivers:
+  /v1/waivers:
     get:
       operationId: listWaivers
       tags: [Waivers]
@@ -426,7 +422,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/WaiverTemplate'
 
-  /members/me/waivers:
+  /v1/members/me/waivers:
     get:
       operationId: listMyWaivers
       tags: [Waivers]
@@ -466,7 +462,7 @@ paths:
 
   # ── Membership Plans ──────────────────────────────────────────────────────
 
-  /membership-plans:
+  /v1/membership-plans:
     get:
       operationId: listMembershipPlans
       tags: [Memberships]
@@ -487,7 +483,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/MembershipPlan'
 
-  /membership-plans/{planId}:
+  /v1/membership-plans/{planId}:
     get:
       operationId: getMembershipPlan
       tags: [Memberships]
@@ -511,7 +507,7 @@ paths:
 
   # ── Member Subscriptions ──────────────────────────────────────────────────
 
-  /members/me/membership:
+  /v1/members/me/membership:
     get:
       operationId: getMyMembership
       tags: [Memberships]
@@ -571,7 +567,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Membership'
 
-  /members/me/membership/freeze:
+  /v1/members/me/membership/freeze:
     post:
       operationId: freezeMembership
       tags: [Memberships]
@@ -592,7 +588,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Membership'
 
-  /members/me/membership/unfreeze:
+  /v1/members/me/membership/unfreeze:
     post:
       operationId: unfreezeMembership
       tags: [Memberships]
@@ -609,7 +605,7 @@ paths:
 
   # ── Day Passes ────────────────────────────────────────────────────────────
 
-  /passes:
+  /v1/passes:
     get:
       operationId: listPassProducts
       tags: [Passes]
@@ -624,7 +620,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/PassProduct'
 
-  /members/me/passes:
+  /v1/members/me/passes:
     get:
       operationId: listMyPasses
       tags: [Passes]
@@ -669,7 +665,7 @@ paths:
 
   # ── Check-ins ─────────────────────────────────────────────────────────────
 
-  /check-ins:
+  /v1/check-ins:
     post:
       operationId: checkIn
       tags: [Check-ins]
@@ -701,7 +697,7 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
-  /members/me/check-ins:
+  /v1/members/me/check-ins:
     get:
       operationId: listMyCheckIns
       tags: [Check-ins]
@@ -738,7 +734,7 @@ paths:
 
   # ── Billing ───────────────────────────────────────────────────────────────
 
-  /members/me/payment-methods:
+  /v1/members/me/payment-methods:
     get:
       operationId: listPaymentMethods
       tags: [Billing]
@@ -776,7 +772,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaymentMethod'
 
-  /members/me/payment-methods/{paymentMethodId}:
+  /v1/members/me/payment-methods/{paymentMethodId}:
     parameters:
       - name: paymentMethodId
         in: path
@@ -820,7 +816,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaymentMethod'
 
-  /members/me/invoices:
+  /v1/members/me/invoices:
     get:
       operationId: listMyInvoices
       tags: [Billing]
@@ -845,7 +841,7 @@ paths:
                         items:
                           $ref: '#/components/schemas/Invoice'
 
-  /members/me/invoices/{invoiceId}:
+  /v1/members/me/invoices/{invoiceId}:
     get:
       operationId: getInvoice
       tags: [Billing]
@@ -871,7 +867,7 @@ paths:
 
   # ── Preferences (new in v2) ───────────────────────────────────────────────
 
-  /members/me/preferences:
+  /v1/members/me/preferences:
     get:
       operationId: getMyPreferences
       tags: [Preferences]
@@ -912,7 +908,7 @@ paths:
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
 
-  /members/{memberId}/preferences:
+  /v1/members/{memberId}/preferences:
     parameters:
       - $ref: '#/components/parameters/MemberIdParam'
     get:
