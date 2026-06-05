@@ -1066,7 +1066,7 @@ components:
 
     RegistrationRequest:
       type: object
-      required: [first_name, last_name, email, password, date_of_birth, phone]
+      required: [first_name, last_name, personal_email, password, date_of_birth, phone]
       properties:
         first_name:
           type: string
@@ -1084,7 +1084,7 @@ components:
           minLength: 5
           maxLength: 25
           example: John
-        email:
+        personal_email:
           type: string
           format: email
           description: The member's email address where they will receive invoices, event sign up confirmations, reminders, and other correspondence.
