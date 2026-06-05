@@ -60,35 +60,47 @@ jobs:
           VALID_VERSIONS = {"massachusetts", "maine"}
           event_name = os.environ.get("EVENT_NAME", "")
 
+          print(f"Event name: {event_name}")
+
           if event_name == "workflow_dispatch":
               desc = os.environ.get("WD_DESCRIPTION", "")
               versions_raw = os.environ.get("WD_VERSIONS", "massachusetts")
               versions = [v.strip() for v in versions_raw.split(",") if v.strip() in VALID_VERSIONS]
               include_tutorials = os.environ.get("WD_INCLUDE_TUTORIALS", "false").lower() == "true"
+              print(f"[workflow_dispatch] raw versions input: {repr(versions_raw)}")
+              print(f"[workflow_dispatch] raw include_tutorials input: {repr(os.environ.get('WD_INCLUDE_TUTORIALS'))}")
           else:
               desc = os.environ.get("RD_DESCRIPTION", "")
               versions_raw = os.environ.get("RD_VERSIONS", "null")
+              include_tutorials_raw = os.environ.get("RD_INCLUDE_TUTORIALS", "null")
+              print(f"[repository_dispatch] raw versions payload: {repr(versions_raw)}")
+              print(f"[repository_dispatch] raw include_tutorials payload: {repr(include_tutorials_raw)}")
               try:
                   parsed = json.loads(versions_raw)
                   versions = [v for v in parsed if isinstance(v, str) and v in VALID_VERSIONS]
-              except Exception:
+                  print(f"[repository_dispatch] parsed versions: {versions}")
+              except Exception as e:
+                  print(f"[repository_dispatch] failed to parse versions: {e}")
                   versions = []
               try:
-                  include_tutorials = json.loads(os.environ.get("RD_INCLUDE_TUTORIALS", "false")) is True
-              except Exception:
+                  include_tutorials = json.loads(include_tutorials_raw) is True
+                  print(f"[repository_dispatch] parsed include_tutorials: {include_tutorials}")
+              except Exception as e:
+                  print(f"[repository_dispatch] failed to parse include_tutorials: {e}")
                   include_tutorials = False
 
           if not versions:
+              print("WARNING: no valid versions found in payload, defaulting to massachusetts")
               versions = ["massachusetts"]
 
           pathlib.Path("/tmp/change_request.txt").write_text(desc)
           pathlib.Path("/tmp/versions.json").write_text(json.dumps(versions))
           pathlib.Path("/tmp/include_tutorials.json").write_text(json.dumps(include_tutorials))
 
-          print(f"Include tutorials: {include_tutorials}")
-
+          print(f"--- Resolved ---")
           print(f"Change request length: {len(desc)} chars")
           print(f"Versions: {versions}")
+          print(f"Include tutorials: {include_tutorials}")
 
           slug = re.sub(r"[^a-z0-9]+", "-", desc.lower())[:50].rstrip("-") or "update"
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
