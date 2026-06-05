@@ -1083,7 +1083,7 @@ components:
           description: The name the member prefers to go by, if different from their legal first name. Displayed in greetings, check-in confirmations, and staff-facing screens.
           minLength: 5
           maxLength: 25
-          example: Alex
+          example: John
         email:
           type: string
           format: email
