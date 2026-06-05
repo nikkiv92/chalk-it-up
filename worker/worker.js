@@ -64,6 +64,7 @@ export default {
         details: String(body.structured.details || "").slice(0, 1000)
       } : null,
       versions: versions.length > 0 ? versions : ["massachusetts"],
+      include_tutorials: body.include_tutorials === true,
       requested_at: new Date().toISOString()
     };
 
