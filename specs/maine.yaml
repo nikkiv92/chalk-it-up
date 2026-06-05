@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: Chalk It Up Membership API
+  title: Chalk It Up (ME) Membership API
   version: 1.0.0
   description: |
     The Chalk It Up gym's API for managing climbing gym memberships, member accounts, waivers,
