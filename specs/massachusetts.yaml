@@ -1030,6 +1030,12 @@ components:
         phone:
           type: string
           example: "+16175550123"
+        preferred_name:
+          type: string
+          description: The name the member prefers to go by, if different from their legal first name. Used for informal communications and display purposes within the gym.
+          minLength: 5
+          maxLength: 25
+          example: Alex
         referred_by_member_id:
           type: string
           format: uuid

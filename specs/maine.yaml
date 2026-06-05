@@ -1078,6 +1078,12 @@ components:
           description: The member's legal last name.
           maxLength: 100
           example: Rose
+        preferred_name:
+          type: string
+          description: The name the member prefers to go by, if different from their legal first name. Displayed in greetings, check-in confirmations, and staff-facing screens.
+          minLength: 5
+          maxLength: 25
+          example: Alex
         email:
           type: string
           format: email
