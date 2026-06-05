@@ -17,6 +17,11 @@ on:
         required: false
         default: "massachusetts"
         type: string
+      include_tutorials:
+        description: "Also update the tutorial files for the selected versions"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -44,8 +49,10 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           WD_DESCRIPTION: ${{ github.event.inputs.description }}
           WD_VERSIONS: ${{ github.event.inputs.versions }}
+          WD_INCLUDE_TUTORIALS: ${{ github.event.inputs.include_tutorials }}
           RD_DESCRIPTION: ${{ github.event.client_payload.description }}
           RD_VERSIONS: ${{ toJson(github.event.client_payload.versions) }}
+          RD_INCLUDE_TUTORIALS: ${{ toJson(github.event.client_payload.include_tutorials) }}
         run: |
           python3 <<'PYEOF'
           import os, json, re, time, pathlib
@@ -57,6 +64,7 @@ jobs:
               desc = os.environ.get("WD_DESCRIPTION", "")
               versions_raw = os.environ.get("WD_VERSIONS", "massachusetts")
               versions = [v.strip() for v in versions_raw.split(",") if v.strip() in VALID_VERSIONS]
+              include_tutorials = os.environ.get("WD_INCLUDE_TUTORIALS", "false").lower() == "true"
           else:
               desc = os.environ.get("RD_DESCRIPTION", "")
               versions_raw = os.environ.get("RD_VERSIONS", "null")
@@ -65,12 +73,19 @@ jobs:
                   versions = [v for v in parsed if isinstance(v, str) and v in VALID_VERSIONS]
               except Exception:
                   versions = []
+              try:
+                  include_tutorials = json.loads(os.environ.get("RD_INCLUDE_TUTORIALS", "false")) is True
+              except Exception:
+                  include_tutorials = False
 
           if not versions:
               versions = ["massachusetts"]
 
           pathlib.Path("/tmp/change_request.txt").write_text(desc)
           pathlib.Path("/tmp/versions.json").write_text(json.dumps(versions))
+          pathlib.Path("/tmp/include_tutorials.json").write_text(json.dumps(include_tutorials))
+
+          print(f"Include tutorials: {include_tutorials}")
 
           print(f"Change request length: {len(desc)} chars")
           print(f"Versions: {versions}")
@@ -91,31 +106,45 @@ jobs:
 
           client = Anthropic()
           versions = json.loads(pathlib.Path("/tmp/versions.json").read_text())
+          include_tutorials = json.loads(pathlib.Path("/tmp/include_tutorials.json").read_text())
           change_request = pathlib.Path("/tmp/change_request.txt").read_text()
+
+          TUTORIAL_FILES = {
+              "massachusetts": "create-new-member-ma.md",
+              "maine":         "create-new-member-me.md",
+          }
 
           system_prompt = """You are an expert OpenAPI 3.x specification editor. You will be given:
           1. The current OpenAPI YAML spec
           2. A change request from a user
+          3. Optionally, one or more tutorial Markdown files that document the API
 
-          Your job is to apply the requested change to the spec and call the
-          submit_spec_update tool with the result.
+          Your job is to apply the requested change to the spec, and if tutorials are
+          provided, update them to stay consistent with the spec changes. Call the
+          submit_spec_update tool with the results.
 
           Critical rules:
           - Preserve all existing endpoints, schemas, and content unless the change explicitly requires modification
           - Keep the same overall structure, indentation style, and conventions
           - If the request is ambiguous, make a reasonable choice and note it in the explanation
           - The updated_spec must be valid OpenAPI 3.x YAML
+          - Only include a tutorial in updated_tutorials if it actually needed changes
           - Always call the submit_spec_update tool. Do not respond in plain text."""
 
           tools = [{
               "name": "submit_spec_update",
-              "description": "Submit the updated OpenAPI spec and a written explanation of the change.",
+              "description": "Submit the updated OpenAPI spec, optionally updated tutorials, and a written explanation.",
               "input_schema": {
                   "type": "object",
                   "properties": {
                       "updated_spec": {
                           "type": "string",
                           "description": "The FULL updated OpenAPI YAML as a string, with the requested change applied."
+                      },
+                      "updated_tutorials": {
+                          "type": "object",
+                          "description": "Map of tutorial filename to full updated Markdown content. Only include files that needed changes.",
+                          "additionalProperties": {"type": "string"}
                       },
                       "explanation": {
                           "type": "string",
@@ -135,11 +164,27 @@ jobs:
                   sys.exit(1)
 
               current_spec = spec_path.read_text()
+
+              tutorial_section = ""
+              if include_tutorials and version in TUTORIAL_FILES:
+                  tutorial_path = pathlib.Path(TUTORIAL_FILES[version])
+                  if tutorial_path.exists():
+                      tutorial_content = tutorial_path.read_text()
+                      tutorial_section = f"""
+
+          Current tutorial ({TUTORIAL_FILES[version]}):
+          ```markdown
+          {tutorial_content}
+          ```
+
+          If the spec change affects anything shown in the tutorial (e.g. request/response examples,
+          field names, paths), update the tutorial to match and include it in updated_tutorials."""
+
               user_msg = f"""Current OpenAPI spec (version: {version}):
           ```yaml
           {current_spec}
           ```
-
+          {tutorial_section}
           Change request:
           {change_request}
 
@@ -166,8 +211,19 @@ jobs:
                   sys.exit(1)
 
               spec_path.write_text(result["updated_spec"])
-              explanations.append(f"**{version}:** {result['explanation']}")
               print(f"specs/{version}.yaml updated.")
+
+              # Write back any updated tutorials
+              updated_tutorials = result.get("updated_tutorials") or {}
+              for filename, content in updated_tutorials.items():
+                  tutorial_path = pathlib.Path(filename)
+                  if tutorial_path.exists():
+                      tutorial_path.write_text(content)
+                      print(f"{filename} updated.")
+                  else:
+                      print(f"WARNING: Claude returned tutorial {filename} but file not found, skipping.")
+
+              explanations.append(f"**{version}:** {result['explanation']}")
 
           combined = "\n\n".join(explanations)
           pathlib.Path("/tmp/explanation.txt").write_text(combined)
@@ -204,12 +260,24 @@ jobs:
           import json, subprocess, pathlib, os
 
           versions = json.loads(pathlib.Path("/tmp/versions.json").read_text())
-          changed = []
+          include_tutorials = json.loads(pathlib.Path("/tmp/include_tutorials.json").read_text())
+
+          TUTORIAL_FILES = {
+              "massachusetts": "create-new-member-ma.md",
+              "maine":         "create-new-member-me.md",
+          }
+
+          candidates = []
           for version in versions:
-              spec_path = f"specs/{version}.yaml"
-              r = subprocess.run(["git", "diff", "--quiet", spec_path], capture_output=True)
+              candidates.append(f"specs/{version}.yaml")
+              if include_tutorials and version in TUTORIAL_FILES:
+                  candidates.append(TUTORIAL_FILES[version])
+
+          changed = []
+          for path in candidates:
+              r = subprocess.run(["git", "diff", "--quiet", path], capture_output=True)
               if r.returncode != 0:
-                  changed.append(spec_path)
+                  changed.append(path)
 
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
               f.write(f"changed={'true' if changed else 'false'}\n")
@@ -232,11 +300,23 @@ jobs:
           import json, subprocess, pathlib
 
           versions = json.loads(pathlib.Path("/tmp/versions.json").read_text())
+          include_tutorials = json.loads(pathlib.Path("/tmp/include_tutorials.json").read_text())
+
+          TUTORIAL_FILES = {
+              "massachusetts": "create-new-member-ma.md",
+              "maine":         "create-new-member-me.md",
+          }
+
+          candidates = []
           for version in versions:
-              spec_path = f"specs/{version}.yaml"
-              r = subprocess.run(["git", "diff", "--quiet", spec_path], capture_output=True)
+              candidates.append(f"specs/{version}.yaml")
+              if include_tutorials and version in TUTORIAL_FILES:
+                  candidates.append(TUTORIAL_FILES[version])
+
+          for path in candidates:
+              r = subprocess.run(["git", "diff", "--quiet", path], capture_output=True)
               if r.returncode != 0:
-                  subprocess.run(["git", "add", spec_path])
+                  subprocess.run(["git", "add", path])
           PYEOF
           EXPLANATION=$(cat /tmp/explanation.txt)
           REQUEST=$(cat /tmp/change_request.txt)
@@ -252,6 +332,7 @@ jobs:
           EXPLANATION=$(cat /tmp/explanation.txt)
           REQUEST=$(cat /tmp/change_request.txt)
           VERSIONS_LIST=$(python3 -c "import json,pathlib; v=json.loads(pathlib.Path('/tmp/versions.json').read_text()); print(', '.join(v))")
+          TUTORIALS_LINE=$(python3 -c "import json,pathlib; inc=json.loads(pathlib.Path('/tmp/include_tutorials.json').read_text()); print('Yes' if inc else 'No')")
           PR_BODY=$(cat <<EOF
           ## AI-drafted documentation update
 
@@ -259,6 +340,7 @@ jobs:
           > $REQUEST
 
           **Versions updated:** $VERSIONS_LIST
+          **Tutorials updated:** $TUTORIALS_LINE
 
           **What Claude changed:**
           $EXPLANATION

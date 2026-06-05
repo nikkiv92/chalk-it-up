@@ -254,6 +254,14 @@
         <div id="versionCheckboxes" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:4px;"></div>
       </div>
 
+      <div class="field">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px;cursor:pointer;">
+          <input type="checkbox" id="includeTutorials" style="accent-color:var(--accent);">
+          Update tutorials as needed
+        </label>
+        <p style="margin:4px 0 0 22px;font-size:12px;color:var(--muted);">Claude will update the relevant tutorial files to stay in sync with spec changes.</p>
+      </div>
+
       <div class="actions">
         <button class="btn-secondary" onclick="closeModal()">Cancel</button>
         <button class="btn-primary" id="submitBtn" onclick="submitProposal()">Submit to AI</button>
@@ -401,7 +409,8 @@
               target: document.getElementById("structTarget").value,
               details: document.getElementById("structDetails").value
             } : null,
-            versions: selectedVersions
+            versions: selectedVersions,
+            include_tutorials: document.getElementById("includeTutorials")?.checked || false
           })
         });
 
