@@ -22,7 +22,7 @@ Content-Type: application/json
 {
   "first_name": "Alexis",
   "last_name": "Kim",
-  "email": "alexis.kim@example.com",
+  "personal_email": "alexis.kim@example.com",
   "password": "climbingismypassion9",
   "date_of_birth": "1995-06-14",
   "phone": "+16175550198"
@@ -108,7 +108,7 @@ Content-Type: application/json
 {
   "first_name": "Alexis",
   "last_name": "Kim",
-  "email": "alexis.kim@example.com",
+  "personal_email": "alexis.kim@example.com",
   "password": "climbingismypassion9",
   "date_of_birth": "1995-06-14",
   "phone": "+16175550198",
@@ -123,7 +123,7 @@ The response shape is identical to Step 1. The referral is recorded on the accou
 ## Common error responses
 
 | Status | Meaning |
-|--------|---------|
+|--------|----------|
 | `409 Conflict` | An account with that email address already exists. |
 | `422 Unprocessable Entity` | One or more fields failed validation — check the `errors` array in the response body for field-level detail. |
 
