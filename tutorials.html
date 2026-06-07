@@ -199,7 +199,13 @@
       width: 360px; display: none;
     }
     .status-panel.open { display: block; }
-    .status-panel h4 { margin: 0 0 12px; font-family: 'Montserrat', sans-serif; font-size: 15px; }
+    .status-panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .status-panel-header h4 { margin: 0; font-family: 'Montserrat', sans-serif; font-size: 15px; }
+    .status-panel-close {
+      background: none; border: none; cursor: pointer; padding: 2px 4px;
+      color: var(--muted); font-size: 18px; line-height: 1;
+    }
+    .status-panel-close:hover { color: var(--ink); }
     .status-step { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; font-size: 13px; }
     .status-step .icon {
       width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
@@ -281,7 +287,10 @@
 
   <!-- Status panel -->
   <div class="status-panel" id="statusPanel">
-    <h4>AI tutorial update workflow</h4>
+    <div class="status-panel-header">
+      <h4>AI tutorial update workflow</h4>
+      <button class="status-panel-close" onclick="dismissStatus()" aria-label="Dismiss">&times;</button>
+    </div>
     <div class="status-step pending" id="step-send"><div class="icon"></div><div class="label">Sending request</div></div>
     <div class="status-step pending" id="step-check"><div class="icon"></div><div class="label">Checking for spec dependencies</div></div>
     <div class="status-step pending" id="step-ai"><div class="icon"></div><div class="label">Claude is drafting the tutorial update</div></div>
@@ -335,7 +344,36 @@
     const REPO_OWNER = "nikkiv92";
     const REPO_NAME  = "chalk-it-up";
 
+    const STEPS = ["step-send","step-check","step-ai","step-pr","step-merge","step-deploy"];
+    const STATUS_KEY = "tutorialWorkflowStatus";
     let pollTimer = null;
+
+    function saveStatus() {
+      const steps = {};
+      STEPS.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const state = ["active","done","error"].find(s => el.classList.contains(s)) || "pending";
+        steps[id] = state;
+      });
+      const open = document.getElementById("statusPanel").classList.contains("open");
+      const statusLink = document.getElementById("statusLink").innerHTML;
+      localStorage.setItem(STATUS_KEY, JSON.stringify({ open, steps, statusLink }));
+    }
+
+    function restoreStatus() {
+      let saved;
+      try { saved = JSON.parse(localStorage.getItem(STATUS_KEY)); } catch (e) { return; }
+      if (!saved || !saved.open) return;
+      STEPS.forEach(id => { if (saved.steps?.[id]) setStepRaw(id, saved.steps[id]); });
+      document.getElementById("statusLink").innerHTML = saved.statusLink || "";
+      document.getElementById("statusPanel").classList.add("open");
+    }
+
+    function dismissStatus() {
+      document.getElementById("statusPanel").classList.remove("open");
+      localStorage.removeItem(STATUS_KEY);
+    }
 
     function openModal() {
       document.getElementById("specWarning").classList.remove("open");
@@ -346,18 +384,29 @@
       document.getElementById("modalBackdrop").classList.remove("open");
     }
 
-    function setStep(id, state) {
+    function setStepRaw(id, state) {
       const el = document.getElementById(id);
       if (!el) return;
       el.classList.remove("pending", "active", "done", "error");
       el.classList.add(state);
     }
-    function resetStatus() {
-      ["step-send","step-check","step-ai","step-pr","step-merge","step-deploy"].forEach(id => setStep(id, "pending"));
-      document.getElementById("statusLink").innerHTML = "";
+    function setStep(id, state) {
+      setStepRaw(id, state);
+      saveStatus();
     }
-    function showStatus() { document.getElementById("statusPanel").classList.add("open"); }
-    function setStatusLink(html) { document.getElementById("statusLink").innerHTML = html; }
+    function resetStatus() {
+      STEPS.forEach(id => setStepRaw(id, "pending"));
+      document.getElementById("statusLink").innerHTML = "";
+      localStorage.removeItem(STATUS_KEY);
+    }
+    function showStatus() {
+      document.getElementById("statusPanel").classList.add("open");
+      saveStatus();
+    }
+    function setStatusLink(html) {
+      document.getElementById("statusLink").innerHTML = html;
+      saveStatus();
+    }
 
     async function submitProposal() {
       const description = document.getElementById("nlInput").value.trim();
@@ -459,7 +508,6 @@
                 setTimeout(() => {
                   setStep("step-deploy", "done");
                   document.getElementById("submitBtn").disabled = false;
-                  setTimeout(() => document.getElementById("statusPanel").classList.remove("open"), 8000);
                 }, 25000);
               }
             }
@@ -482,6 +530,9 @@
         if (sawMerge) clearInterval(pollTimer);
       }, 5000);
     }
+
+    // Restore any in-progress workflow state from before a refresh
+    restoreStatus();
 
     // Auto-open modal if linked with #propose
     if (window.location.hash === "#propose") openModal();
