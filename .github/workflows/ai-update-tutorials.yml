@@ -1,0 +1,280 @@
+name: AI Update Tutorials
+
+# Triggered by the Cloudflare Worker via repository_dispatch.
+# Listens for event_type: "propose-tutorial-change"
+# Pre-flight spec-change detection is handled in the Worker before dispatch reaches here.
+
+on:
+  repository_dispatch:
+    types: [propose-tutorial-change]
+  workflow_dispatch:
+    inputs:
+      description:
+        description: "Tutorial change request"
+        required: true
+        type: string
+      tutorials:
+        description: "Comma-separated locations to update (e.g. massachusetts,maine)"
+        required: false
+        default: "massachusetts,maine"
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-tutorials:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install anthropic
+
+      - name: Resolve change request and targets
+        id: req
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          WD_DESCRIPTION: ${{ github.event.inputs.description }}
+          WD_TUTORIALS: ${{ github.event.inputs.tutorials }}
+          RD_DESCRIPTION: ${{ github.event.client_payload.description }}
+          RD_TUTORIALS: ${{ toJson(github.event.client_payload.tutorials) }}
+        run: |
+          python3 <<'PYEOF'
+          import os, json, re, time, pathlib
+
+          VALID_LOCATIONS = {"massachusetts", "maine"}
+          event_name = os.environ.get("EVENT_NAME", "")
+
+          print(f"Event name: {event_name}")
+
+          if event_name == "workflow_dispatch":
+              desc = os.environ.get("WD_DESCRIPTION", "")
+              tutorials_raw = os.environ.get("WD_TUTORIALS", "massachusetts,maine")
+              tutorials = [v.strip() for v in tutorials_raw.split(",") if v.strip() in VALID_LOCATIONS]
+              print(f"[workflow_dispatch] raw tutorials input: {repr(tutorials_raw)}")
+          else:
+              desc = os.environ.get("RD_DESCRIPTION", "")
+              tutorials_raw = os.environ.get("RD_TUTORIALS", "null")
+              print(f"[repository_dispatch] raw tutorials payload: {repr(tutorials_raw)}")
+              try:
+                  parsed = json.loads(tutorials_raw)
+                  tutorials = [v for v in parsed if isinstance(v, str) and v in VALID_LOCATIONS]
+                  print(f"[repository_dispatch] parsed tutorials: {tutorials}")
+              except Exception as e:
+                  print(f"[repository_dispatch] failed to parse tutorials: {e}")
+                  tutorials = []
+
+          if not tutorials:
+              print("WARNING: no valid tutorial locations found, defaulting to massachusetts")
+              tutorials = ["massachusetts"]
+
+          pathlib.Path("/tmp/change_request.txt").write_text(desc)
+          pathlib.Path("/tmp/tutorials.json").write_text(json.dumps(tutorials))
+
+          print(f"--- Resolved ---")
+          print(f"Change request length: {len(desc)} chars")
+          print(f"Target tutorials: {tutorials}")
+
+          slug = re.sub(r"[^a-z0-9]+", "-", desc.lower())[:50].rstrip("-") or "tutorial-update"
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"slug={slug}\n")
+              f.write(f"branch=ai/tutorial-{slug}-{int(time.time())}\n")
+          PYEOF
+
+      - name: Run Claude to update tutorials
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          python3 <<'PYEOF'
+          import os, sys, json, pathlib
+          from anthropic import Anthropic
+
+          client = Anthropic()
+          tutorials = json.loads(pathlib.Path("/tmp/tutorials.json").read_text())
+          change_request = pathlib.Path("/tmp/change_request.txt").read_text()
+
+          TUTORIAL_FILES = {
+              "massachusetts": "create-new-member-ma.md",
+              "maine":         "create-new-member-me.md",
+          }
+
+          system_prompt = """You are a technical writer maintaining API tutorial documentation for a climbing gym membership API.
+
+You will be given one or more tutorial Markdown files and a change request. Your job is to apply the requested change to the tutorial(s).
+
+Critical rules:
+- Only modify tutorial prose, examples, structure, and wording — do NOT suggest or make changes to API spec files
+- Preserve all existing factual content (field names, endpoint paths, response schemas) unless the change explicitly asks to update them and those changes are already reflected in the spec
+- Keep the same overall structure and Markdown conventions
+- Only include a tutorial in updated_tutorials if it actually needed changes
+- Always call the submit_tutorial_update tool. Do not respond in plain text."""
+
+          tools = [{
+              "name": "submit_tutorial_update",
+              "description": "Submit updated tutorial content and an explanation of changes made.",
+              "input_schema": {
+                  "type": "object",
+                  "properties": {
+                      "updated_tutorials": {
+                          "type": "object",
+                          "description": "Map of tutorial filename to full updated Markdown content. Only include files that needed changes.",
+                          "additionalProperties": {"type": "string"}
+                      },
+                      "explanation": {
+                          "type": "string",
+                          "description": "A 2-3 sentence plain-English summary of what was changed and why."
+                      }
+                  },
+                  "required": ["updated_tutorials", "explanation"]
+              }
+          }]
+
+          tutorial_sections = []
+          for loc in tutorials:
+              filename = TUTORIAL_FILES.get(loc)
+              if not filename:
+                  continue
+              path = pathlib.Path(filename)
+              if not path.exists():
+                  print(f"WARNING: {filename} not found, skipping")
+                  continue
+              content = path.read_text()
+              tutorial_sections.append(f"Tutorial file: {filename}\n```markdown\n{content}\n```")
+
+          if not tutorial_sections:
+              print("ERROR: No tutorial files found to update")
+              sys.exit(1)
+
+          user_msg = "\n\n".join(tutorial_sections) + f"\n\nChange request:\n{change_request}\n\nApply the change and call submit_tutorial_update with the result."
+
+          response = client.messages.create(
+              model="claude-sonnet-4-6",
+              max_tokens=16000,
+              system=system_prompt,
+              tools=tools,
+              tool_choice={"type": "tool", "name": "submit_tutorial_update"},
+              messages=[{"role": "user", "content": user_msg}]
+          )
+
+          result = None
+          for block in response.content:
+              if getattr(block, "type", None) == "tool_use" and block.name == "submit_tutorial_update":
+                  result = block.input
+                  break
+
+          if result is None:
+              print(f"ERROR: Claude did not call submit_tutorial_update.")
+              print(f"Stop reason: {response.stop_reason}")
+              sys.exit(1)
+
+          updated_tutorials = result.get("updated_tutorials") or {}
+          for filename, content in updated_tutorials.items():
+              path = pathlib.Path(filename)
+              if path.exists():
+                  path.write_text(content)
+                  print(f"{filename} updated.")
+              else:
+                  print(f"WARNING: Claude returned {filename} but file not found, skipping.")
+
+          pathlib.Path("/tmp/explanation.txt").write_text(result["explanation"])
+          print("Explanation:", result["explanation"])
+          PYEOF
+
+      - name: Check if there are changes
+        id: diff
+        run: |
+          python3 <<'PYEOF'
+          import json, subprocess, pathlib, os
+
+          tutorials = json.loads(pathlib.Path("/tmp/tutorials.json").read_text())
+          TUTORIAL_FILES = {
+              "massachusetts": "create-new-member-ma.md",
+              "maine":         "create-new-member-me.md",
+          }
+
+          changed = []
+          for loc in tutorials:
+              f = TUTORIAL_FILES.get(loc)
+              if f:
+                  r = subprocess.run(["git", "diff", "--quiet", f], capture_output=True)
+                  if r.returncode != 0:
+                      changed.append(f)
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"changed={'true' if changed else 'false'}\n")
+
+          if changed:
+              print("Changes detected in:", ", ".join(changed))
+              for path in changed:
+                  subprocess.run(["git", "diff", "--stat", path])
+          else:
+              print("No changes produced by Claude. Exiting.")
+          PYEOF
+
+      - name: Create branch and commit
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name "Chalk It Up AI Bot"
+          git config user.email "bot@chalk-it-up.local"
+          git checkout -b "${{ steps.req.outputs.branch }}"
+          python3 <<'PYEOF'
+          import json, subprocess, pathlib
+
+          tutorials = json.loads(pathlib.Path("/tmp/tutorials.json").read_text())
+          TUTORIAL_FILES = {
+              "massachusetts": "create-new-member-ma.md",
+              "maine":         "create-new-member-me.md",
+          }
+
+          for loc in tutorials:
+              f = TUTORIAL_FILES.get(loc)
+              if f:
+                  r = subprocess.run(["git", "diff", "--quiet", f], capture_output=True)
+                  if r.returncode != 0:
+                      subprocess.run(["git", "add", f])
+          PYEOF
+          EXPLANATION=$(cat /tmp/explanation.txt)
+          REQUEST=$(cat /tmp/change_request.txt)
+          git commit -m "AI: ${EXPLANATION:0:72}" -m "Change request: $REQUEST" -m "$EXPLANATION"
+          git push origin "${{ steps.req.outputs.branch }}"
+
+      - name: Open pull request
+        if: steps.diff.outputs.changed == 'true'
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EXPLANATION=$(cat /tmp/explanation.txt)
+          REQUEST=$(cat /tmp/change_request.txt)
+          TUTORIALS_LIST=$(python3 -c "import json,pathlib; t=json.loads(pathlib.Path('/tmp/tutorials.json').read_text()); print(', '.join(t))")
+          PR_BODY=$(cat <<EOF
+          ## AI-drafted tutorial update
+
+          **Change request:**
+          > $REQUEST
+
+          **Tutorials updated:** $TUTORIALS_LIST
+
+          **What Claude changed:**
+          $EXPLANATION
+
+          ---
+          This PR was opened automatically by the AI tutorial update workflow.
+          EOF
+          )
+          PR_URL=$(gh pr create \
+            --base main \
+            --head "${{ steps.req.outputs.branch }}" \
+            --title "AI: ${EXPLANATION:0:60}" \
+            --body "$PR_BODY")
+          echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+          echo "::notice::PR opened: $PR_URL — awaiting human review"
