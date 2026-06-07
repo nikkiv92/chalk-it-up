@@ -13,7 +13,11 @@ This tutorial walks through calling the `POST /v1/members/register` endpoint (`r
 
 ## Step 1: Register a new member
 
-Send a `POST` request to the `/v1/members/register` endpoint with the new member's details. All fields in the example below are required unless marked optional.
+To register a new member, send a `POST` request to the `/v1/members/register` [endpoint](https://nikkiv92.github.io/chalk-it-up/spec.html#tag/Members/operation/registerMember) with the new member's details.
+
+### Request body
+
+The following code sample shows a request body containing all fields required to add a new member. For the full request body specification, see [Register a new member account](https://nikkiv92.github.io/chalk-it-up/spec.html#tag/Members/operation/registerMember).
 
 ```json
 POST /v1/members/register
@@ -30,6 +34,10 @@ Content-Type: application/json
 ```
 
 ### Successful response — `201 Created`
+
+The response shows the newly registered member's unique member ID (`member.id`). The new member's status starts as `pending_verification`. A verification email is sent automatically to the address provided — the member must click the link before their status moves to `active`.
+
+The response also includes an `access_token` and `refresh_token` so the member can be logged in immediately without a separate call to `POST /v1/auth/login`.
 
 ```json
 {
@@ -52,10 +60,6 @@ Content-Type: application/json
   }
 }
 ```
-
-The new member's status starts as `pending_verification`. A verification email is sent automatically to the address provided — the member must click the link before their status moves to `active`.
-
-The response also includes an `access_token` and `refresh_token` so the member can be logged in immediately without a separate call to `POST /v1/auth/login`.
 
 ---
 
