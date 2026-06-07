@@ -29,15 +29,27 @@
       border-bottom: 1px solid var(--border);
       box-shadow: 0 1px 3px rgba(0,0,0,0.04);
     }
-    .version-select {
-      appearance: none; -webkit-appearance: none;
-      background: rgba(255,255,255,0.75) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%234432b9'/%3E%3C/svg%3E") no-repeat right 10px center;
+    .location-selector {
+      display: inline-flex; align-items: center;
+      background: rgba(255,255,255,0.75);
       border: 1px solid rgba(68,50,185,0.3); border-radius: 8px;
-      padding: 8px 32px 8px 12px; font: inherit; font-size: 13px; font-weight: 600;
-      color: var(--accent-dark); cursor: pointer;
       transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
-    .version-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(68,50,185,0.15); }
+    .location-selector:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(68,50,185,0.15); }
+    .location-label {
+      padding: 8px 10px 8px 12px;
+      font-size: 13px; font-weight: 600; color: var(--accent-dark);
+      border-right: 1px solid rgba(68,50,185,0.2);
+      white-space: nowrap; user-select: none;
+    }
+    .version-select {
+      appearance: none; -webkit-appearance: none;
+      background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%234432b9'/%3E%3C/svg%3E") no-repeat right 10px center;
+      border: none; border-radius: 0 8px 8px 0;
+      padding: 8px 32px 8px 10px; font: inherit; font-size: 13px; font-weight: 600;
+      color: var(--muted); cursor: pointer; outline: none;
+    }
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
     .topbar-center { display: flex; align-items: center; gap: 12px; }
 
     /* Tutorials dropdown */
@@ -193,13 +205,18 @@
       Chalk It Up &mdash; Climbing Gym Membership API
       <span class="sub">Live AI-driven documentation demo</span>
     </a>
-    <div class="topbar-center">
-      <select id="versionSelect" class="version-select" onchange="onVersionChange(this.value)" aria-label="API version"></select>
-      <a href="./tutorials.html" class="nav-dropdown-btn">Tutorials</a>
+    <div class="topbar-right">
+      <div class="topbar-center">
+        <div class="location-selector">
+          <span class="location-label">Location</span>
+          <select id="versionSelect" class="version-select" onchange="onVersionChange(this.value)" aria-label="Location"></select>
+        </div>
+        <a href="./tutorials.html" class="nav-dropdown-btn">Tutorials</a>
+      </div>
+      <button class="propose-btn" onclick="openModal()">
+        Propose a change
+      </button>
     </div>
-    <button class="propose-btn" onclick="openModal()">
-      Propose a change
-    </button>
   </div>
 
   <!-- Redoc renders here -->
