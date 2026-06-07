@@ -15,6 +15,7 @@
       --panel: #fafbfd;
       --border: #e5e7eb;
       --code-bg: #f3f4f6;
+      --sidebar-width: 224px;
     }
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--ink); background: var(--bg); }
@@ -41,10 +42,49 @@
     }
     .back-btn:hover { border-color: var(--accent); }
 
-    .content {
-      max-width: 780px;
+    /* Two-column layout */
+    .page-body {
+      display: flex;
+      align-items: flex-start;
+      max-width: 1100px;
       margin: 0 auto;
-      padding: 48px 24px 80px;
+      padding: 0 24px;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: var(--sidebar-width);
+      flex-shrink: 0;
+      position: sticky;
+      top: 57px;
+      padding: 40px 24px 80px 0;
+      max-height: calc(100vh - 57px);
+      overflow-y: auto;
+    }
+    .sidebar-group { margin-bottom: 24px; }
+    .sidebar-group-label {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--muted); margin-bottom: 6px;
+    }
+    .sidebar-link {
+      display: block; padding: 6px 10px;
+      border-radius: 6px; text-decoration: none;
+      font-size: 13px; color: var(--ink);
+      transition: background 0.1s ease, color 0.1s ease;
+    }
+    .sidebar-link:hover { background: var(--panel); color: var(--accent-dark); }
+    .sidebar-link.active {
+      background: #ede9fb; color: var(--accent-dark); font-weight: 600;
+    }
+
+    /* Content */
+    .content {
+      flex: 1;
+      min-width: 0;
+      padding: 48px 0 80px 32px;
+      border-left: 1px solid var(--border);
     }
 
     .content h1 {
@@ -108,23 +148,44 @@
 </head>
 <body>
   <div class="topbar">
-    <a class="brand" href="./index.html">
+    <a class="brand" href="./">
       <span class="dot"></span>
       Chalk It Up &mdash; Climbing Gym Membership API
       <span class="sub">Live AI-driven documentation demo</span>
     </a>
-    <a class="back-btn" href="./index.html">&larr; API Reference</a>
+    <div style="display:flex;gap:8px;">
+      <a class="back-btn" href="./tutorials.html">All tutorials</a>
+      <a class="back-btn" href="./spec.html">API Reference</a>
+    </div>
   </div>
 
-  <div class="content">
-    <div id="loading">Loading tutorial&hellip;</div>
-    <div id="body"></div>
+  <div class="page-body">
+    <nav class="sidebar" aria-label="Tutorials">
+      <div class="sidebar-group">
+        <div class="sidebar-group-label">Massachusetts</div>
+        <a class="sidebar-link" href="./tutorial.html?location=ma" data-location="ma">Register a new member</a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-label">Maine</div>
+        <a class="sidebar-link" href="./tutorial.html?location=me" data-location="me">Register a new member</a>
+      </div>
+    </nav>
+
+    <div class="content">
+      <div id="loading">Loading tutorial&hellip;</div>
+      <div id="body"></div>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script>
     const loc = new URLSearchParams(window.location.search).get("location");
     const mdFile = loc === "me" ? "./create-new-member-me.md" : "./create-new-member-ma.md";
+
+    // Mark the active sidebar link
+    const activeLink = document.querySelector(`.sidebar-link[data-location="${loc || 'ma'}"]`);
+    if (activeLink) activeLink.classList.add("active");
+
     fetch(mdFile)
       .then(r => {
         if (!r.ok) throw new Error(r.status);
