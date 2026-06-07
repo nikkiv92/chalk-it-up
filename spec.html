@@ -334,6 +334,9 @@
       if (!v) return;
       activeVersion = v;
       currentSpecSha = null;
+      const url = new URL(window.location);
+      url.searchParams.set("location", value);
+      history.replaceState(null, "", url);
       renderRedoc(v.url);
     }
 
@@ -521,8 +524,8 @@
         sel.appendChild(opt);
       });
 
-      // Pre-select version from ?version= query param if present
-      const paramVersion = new URLSearchParams(window.location.search).get("version");
+      // Pre-select location from ?location= query param if present; always reflect active location in URL
+      const paramVersion = new URLSearchParams(window.location.search).get("location");
       if (paramVersion) {
         const match = VERSIONS.find(v => v.value === paramVersion);
         if (match) {
@@ -530,6 +533,9 @@
           sel.value = match.value;
         }
       }
+      const initUrl = new URL(window.location);
+      initUrl.searchParams.set("location", activeVersion.value);
+      history.replaceState(null, "", initUrl);
 
       // Populate version checkboxes in modal (all checked by default)
       const container = document.getElementById("versionCheckboxes");
