@@ -13,11 +13,11 @@ This tutorial walks through calling the `POST /v1/members/register` endpoint (`r
 
 ## Step 1: Register a new member
 
-To register a new member, send a `POST` request to the `/v1/members/register` [endpoint](https://nikkiv92.github.io/chalk-it-up/spec.html#tag/Members/operation/registerMember) with the new member's details. 
+To register a new member, send a `POST` request to the `/v1/members/register` [endpoint](https://nikkiv92.github.io/chalk-it-up/spec.html?location=massachusetts#tag/Members/operation/registerMember) with the new member's details. 
 
 ### Request body
 
-The following code sample shows a request body containing all fields required to add a new member. For the full request body specification, see [Register a new member account](https://nikkiv92.github.io/chalk-it-up/spec.html#tag/Members/operation/registerMember).
+The following code sample shows a request body containing all fields required to add a new member. For the full request body specification, see [Register a new member account](https://nikkiv92.github.io/chalk-it-up/spec.html?location=massachusetts#tag/Members/operation/registerMember).
 
 ```json
 POST /v1/members/register
