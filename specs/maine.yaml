@@ -49,7 +49,7 @@ paths:
       operationId: registerMember
       tags: [Members]
       summary: Register a new member account
-      description: Creates a member account and sends an email verification link.
+      description: Creates a member account and sends an email verification link. See the [Register a New Member](https://nikkiv92.github.io/chalk-it-up/tutorial.html?location=me) tutorial for integration instructions.
       requestBody:
         required: true
         content:
