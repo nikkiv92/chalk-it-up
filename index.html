@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Climbing Gym Membership API — Live AI-driven Docs Demo</title>
+  <title>Chalk It Up — Climbing Gym Membership API</title>
   <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,600,700|Roboto:300,400,700" rel="stylesheet" />
   <style>
     :root {
@@ -14,543 +14,167 @@
       --bg: #ffffff;
       --panel: #fafbfd;
       --border: #e5e7eb;
-      --ok: #10b981;
-      --warn: #f59e0b;
     }
     * { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; height: 100%; font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--ink); }
+    html, body { margin: 0; padding: 0; font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--ink); background: var(--bg); }
 
-    /* Sticky top bar */
+    /* Topbar */
     .topbar {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      position: absolute; top: 0; left: 0; right: 0; z-index: 10;
       display: flex; align-items: center; justify-content: space-between;
-      padding: 12px 24px;
-      background: linear-gradient(90deg, #fff 0%, #b398d3 60%, #a284d6 100%);
-      border-bottom: 1px solid var(--border);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      padding: 16px 32px;
     }
-    .version-select {
-      appearance: none; -webkit-appearance: none;
-      background: rgba(255,255,255,0.75) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%234432b9'/%3E%3C/svg%3E") no-repeat right 10px center;
-      border: 1px solid rgba(68,50,185,0.3); border-radius: 8px;
-      padding: 8px 32px 8px 12px; font: inherit; font-size: 13px; font-weight: 600;
-      color: var(--accent-dark); cursor: pointer;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease;
-    }
-    .version-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(68,50,185,0.15); }
-    .topbar-center { display: flex; align-items: center; gap: 12px; }
-
-    /* Tutorials dropdown */
-    .nav-dropdown { position: relative; }
-    .nav-dropdown-btn {
-      background: white; border: 1px solid rgba(68,50,185,0.3); border-radius: 8px;
-      padding: 8px 14px; font: inherit; font-size: 13px; font-weight: 600;
-      color: var(--accent-dark); cursor: pointer; text-decoration: none;
-      display: flex; align-items: center; gap: 6px;
-      transition: border-color 0.15s ease, background 0.15s ease;
-    }
-    .nav-dropdown-btn:hover { border-color: var(--accent); background: rgba(255,255,255,0.6); }
-    .nav-dropdown-btn svg { transition: transform 0.15s ease; }
-    .nav-dropdown.open .nav-dropdown-btn svg { transform: rotate(180deg); }
-    .nav-dropdown-menu {
-      display: none; position: absolute; top: calc(100% + 6px); left: 0;
-      background: white; border: 1px solid var(--border); border-radius: 10px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.12); min-width: 220px; z-index: 500;
-      padding: 4px;
-    }
-    .nav-dropdown.open .nav-dropdown-menu { display: block; }
-    .nav-dropdown-menu a {
-      display: block; padding: 9px 14px; border-radius: 7px;
-      text-decoration: none; font-size: 13px; color: var(--ink);
-      transition: background 0.1s ease;
-    }
-    .nav-dropdown-menu a:hover { background: var(--panel); color: var(--accent-dark); }
     .brand {
       display: flex; align-items: center; gap: 10px;
       font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 18px;
+      color: white; text-decoration: none;
     }
-    .brand .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); display: inline-block; }
-    .brand .sub { font-weight: 400; color: var(--muted); font-size: 13px; margin-left: 8px; }
+    .brand .dot { width: 12px; height: 12px; border-radius: 50%; background: white; opacity: 0.85; display: inline-block; }
+    .github-link {
+      color: rgba(255,255,255,0.85); text-decoration: none; font-size: 13px; font-weight: 600;
+      border: 1px solid rgba(255,255,255,0.4); padding: 7px 14px; border-radius: 8px;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .github-link:hover { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.7); }
 
-    .propose-btn {
-      background: var(--accent); color: white; border: 0; padding: 10px 18px;
-      border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer;
-      box-shadow: 0 2px 8px rgba(68,50,185,0.35);
-      transition: transform 0.1s ease, box-shadow 0.2s ease;
-    }
-    .propose-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(68,50,185,0.5); }
-    .propose-btn:active { transform: translateY(0); }
-
-    /* Modal */
-    .modal-backdrop {
-      position: fixed; inset: 0; background: rgba(20,22,30,0.55);
-      display: none; align-items: center; justify-content: center; z-index: 2000;
-      backdrop-filter: blur(2px);
-    }
-    .modal-backdrop.open { display: flex; }
-    .modal {
-      background: white; width: min(640px, 92vw); border-radius: 14px;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.25);
-      padding: 28px; max-height: 90vh; overflow-y: auto;
-    }
-    .modal h2 { margin: 0 0 8px; font-family: 'Montserrat', sans-serif; font-size: 22px; }
-    .modal p.lead { color: var(--muted); margin: 0 0 20px; font-size: 14px; line-height: 1.5; }
-
-    .field { margin-bottom: 16px; }
-    .field label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px; }
-    .field textarea, .field input, .field select {
-      width: 100%; padding: 10px 12px; border: 1px solid var(--border);
-      border-radius: 8px; font: inherit; font-size: 14px; resize: vertical;
-    }
-    .field textarea { min-height: 90px; }
-    .field textarea:focus, .field input:focus, .field select:focus {
-      outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(68,50,185,0.15);
-    }
-
-    .toggle {
-      display: inline-flex; align-items: center; gap: 8px;
-      color: var(--accent-dark); font-size: 13px; cursor: pointer; font-weight: 600;
-      background: none; border: 0; padding: 6px 0;
-    }
-    .toggle:hover { text-decoration: underline; }
-
-    .structured { display: none; padding: 16px; background: var(--panel); border-radius: 10px; margin-top: 8px; }
-    .structured.open { display: block; }
-
-    .actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
-    .btn-secondary {
-      background: white; color: var(--ink); border: 1px solid var(--border);
-      padding: 10px 18px; border-radius: 8px; font-weight: 500; cursor: pointer;
-    }
-    .btn-primary {
-      background: var(--accent); color: white; border: 0;
-      padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer;
-    }
-    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    .examples { margin-top: -8px; margin-bottom: 14px; }
-    .example-chip {
-      display: inline-block; padding: 6px 12px; margin: 4px 4px 4px 0;
-      background: #f5f3fb; color: var(--accent-dark); border: 1px solid #d9d4f0;
-      border-radius: 20px; font-size: 12px; cursor: pointer;
-      transition: background 0.15s ease;
-    }
-    .example-chip:hover { background: #e8e3f5; }
-
-    /* Status toast */
-    .status-panel {
-      position: fixed; bottom: 24px; right: 24px; z-index: 1500;
-      background: white; border-radius: 12px; padding: 16px 20px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.15); border: 1px solid var(--border);
-      width: 360px; display: none;
-    }
-    .status-panel.open { display: block; }
-    .status-panel h4 { margin: 0 0 12px; font-family: 'Montserrat', sans-serif; font-size: 15px; }
-    .status-step { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; font-size: 13px; }
-    .status-step .icon {
-      width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
-      border: 2px solid var(--border); margin-top: 1px;
+    /* Hero */
+    .hero {
+      position: relative; height: 520px; overflow: hidden;
       display: flex; align-items: center; justify-content: center;
-      font-size: 11px; font-weight: 700;
     }
-    .status-step.active .icon { border-color: var(--accent); background: var(--accent); color: white; }
-    .status-step.active .icon::before {
-      content: ""; width: 8px; height: 8px; background: white; border-radius: 50%;
-      animation: pulse 1s ease-in-out infinite;
+    .hero-img {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; object-position: center 30%;
     }
-    .status-step.done .icon { border-color: var(--ok); background: var(--ok); color: white; }
-    .status-step.done .icon::before { content: "\2713"; color: white; }
-    .status-step.error .icon { border-color: #ef4444; background: #ef4444; color: white; }
-    .status-step.error .icon::before { content: "!"; color: white; }
-    .status-step .label { flex: 1; line-height: 1.4; color: var(--ink); }
-    .status-step.pending .label { color: var(--muted); }
-    .status-link { margin-top: 10px; font-size: 12px; }
-    .status-link a { color: var(--accent-dark); text-decoration: none; font-weight: 600; }
-    .status-link a:hover { text-decoration: underline; }
-
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(0.6); opacity: 0.5; }
+    .hero-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(160deg, rgba(68,50,185,0.72) 0%, rgba(20,15,60,0.65) 100%);
+    }
+    .hero-content {
+      position: relative; z-index: 1; text-align: center; padding: 0 24px;
+    }
+    .hero-content h1 {
+      font-family: 'Montserrat', sans-serif; font-weight: 700;
+      font-size: clamp(32px, 5vw, 56px); color: white;
+      margin: 0 0 16px; letter-spacing: -0.5px;
+    }
+    .hero-content p {
+      color: rgba(255,255,255,0.85); font-size: clamp(15px, 2vw, 18px);
+      margin: 0; max-width: 540px; line-height: 1.6;
+    }
+    .badge {
+      display: inline-block; margin-bottom: 20px;
+      background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+      color: rgba(255,255,255,0.9); font-size: 12px; font-weight: 600;
+      padding: 5px 14px; border-radius: 20px; letter-spacing: 0.5px; text-transform: uppercase;
     }
 
-    /* Redoc container */
-    #redoc-container { min-height: calc(100vh - 60px); padding-top: 60px; }
+    /* Cards */
+    .cards-section {
+      max-width: 860px; margin: 0 auto; padding: 56px 24px 80px;
+    }
+    .cards-section h2 {
+      font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 22px;
+      margin: 0 0 8px; text-align: center;
+    }
+    .cards-section .intro {
+      text-align: center; color: var(--muted); font-size: 15px; margin: 0 0 40px;
+    }
+    .cards {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;
+    }
+    .card {
+      display: flex; flex-direction: column;
+      border: 1px solid var(--border); border-radius: 16px;
+      overflow: hidden; text-decoration: none; color: inherit;
+      transition: box-shadow 0.2s ease, transform 0.15s ease;
+      background: var(--bg);
+    }
+    .card:hover { box-shadow: 0 8px 28px rgba(68,50,185,0.14); transform: translateY(-3px); }
+    .card-icon {
+      height: 120px; display: flex; align-items: center; justify-content: center;
+      font-size: 48px;
+    }
+    .card-icon.api { background: linear-gradient(135deg, #ede9fb 0%, #d4ccf5 100%); }
+    .card-icon.tutorials { background: linear-gradient(135deg, #e9f5fb 0%, #cce8f5 100%); }
+    .card-body { padding: 24px 24px 28px; flex: 1; display: flex; flex-direction: column; }
+    .card-body h3 {
+      font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 18px;
+      margin: 0 0 10px;
+    }
+    .card-body p { color: var(--muted); font-size: 14px; line-height: 1.6; margin: 0 0 20px; flex: 1; }
+    .card-cta {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-weight: 600; font-size: 14px; color: var(--accent-dark);
+    }
+    .card-cta svg { transition: transform 0.15s ease; }
+    .card:hover .card-cta svg { transform: translateX(3px); }
 
-    /* Footer ribbon */
-    .ribbon {
-      position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
-      background: #1f2330; color: white; padding: 8px 24px; font-size: 12px;
+    /* Footer */
+    .footer {
+      border-top: 1px solid var(--border); padding: 20px 32px;
       display: flex; align-items: center; justify-content: space-between;
+      font-size: 12px; color: var(--muted);
     }
-    .ribbon a { color: #c4b8e9; text-decoration: none; }
-    .ribbon a:hover { text-decoration: underline; }
+    .footer a { color: var(--muted); text-decoration: none; }
+    .footer a:hover { color: var(--accent-dark); }
   </style>
 </head>
 <body>
-  <div class="topbar">
-    <div class="brand">
-      <span class="dot"></span>
-      Chalk It Up &mdash; Climbing Gym Membership API
-      <span class="sub">Live AI-driven documentation demo</span>
+
+  <div class="hero">
+    <img class="hero-img" src="./images/tofan-teodor-gi2dUvCUVB8-unsplash.jpg" alt="Climber on an indoor bouldering wall" />
+    <div class="hero-overlay"></div>
+    <div class="topbar">
+      <a href="./" class="brand">
+        <span class="dot"></span>
+        Chalk It Up
+      </a>
+      <a href="https://github.com/nikkiv92/chalk-it-up" target="_blank" rel="noopener" class="github-link">View on GitHub &rarr;</a>
     </div>
-    <div class="topbar-center">
-      <select id="versionSelect" class="version-select" onchange="onVersionChange(this.value)" aria-label="API version"></select>
-      <a href="./tutorials.html" class="nav-dropdown-btn">Tutorials</a>
-    </div>
-    <button class="propose-btn" onclick="openModal()">
-      Propose a change
-    </button>
-  </div>
-
-  <!-- Redoc renders here -->
-  <div id="redoc-container"></div>
-
-  <!-- Modal -->
-  <div class="modal-backdrop" id="modalBackdrop" onclick="if (event.target===this) closeModal()">
-    <div class="modal" role="dialog" aria-modal="true">
-      <h2>Propose a change to the API</h2>
-      <p class="lead">
-        Describe what you'd like to change. An AI workflow will draft the spec update,
-        open a pull request, and merge it. The docs on this page will refresh automatically.
-      </p>
-
-      <div class="field">
-        <label for="nlInput">What should change?</label>
-        <textarea id="nlInput" placeholder="e.g., Add an optional 'nickname' field (max 50 chars) to the Member schema for staff to use on the barcode display."></textarea>
-      </div>
-
-      <div class="examples">
-        <span class="example-chip" onclick="useExample(this)">Add an optional `nickname` field to the Member schema (max 50 chars)</span>
-        <span class="example-chip" onclick="useExample(this)">Add a 429 Too Many Requests response to POST /auth/login</span>
-        <span class="example-chip" onclick="useExample(this)">Add a new GET /facilities/status endpoint returning current gym occupancy</span>
-      </div>
-
-      <button class="toggle" onclick="toggleStructured()">
-        <span id="structToggleText">Or use the structured form &darr;</span>
-      </button>
-
-      <div class="structured" id="structured">
-        <div class="field">
-          <label>Change type</label>
-          <select id="structType">
-            <option value="add_endpoint">Add an endpoint</option>
-            <option value="modify_endpoint">Modify an existing endpoint</option>
-            <option value="add_schema_field">Add a field to a schema</option>
-            <option value="add_response">Document a new response code</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Target (path, schema name, etc.)</label>
-          <input id="structTarget" placeholder="Member" />
-        </div>
-        <div class="field">
-          <label>Details</label>
-          <textarea id="structDetails" placeholder="Add an optional 'nickname' string field, max length 50, described as 'display name shown on barcode scanner'."></textarea>
-        </div>
-      </div>
-
-      <div class="field">
-        <label>Apply to version(s)</label>
-        <div id="versionCheckboxes" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:4px;"></div>
-      </div>
-
-      <div class="field">
-        <label style="display:flex;align-items:center;gap:8px;width:fit-content;white-space:nowrap;font-weight:600;font-size:13px;cursor:pointer;">
-          <input type="checkbox" id="includeTutorials" style="accent-color:var(--accent);">
-          Update tutorials as needed
-        </label>
-        <p style="margin:4px 0 0 22px;font-size:12px;color:var(--muted);">Claude will update the relevant tutorial files to stay in sync with spec changes.</p>
-      </div>
-
-      <div class="actions">
-        <button class="btn-secondary" onclick="closeModal()">Cancel</button>
-        <button class="btn-primary" id="submitBtn" onclick="submitProposal()">Submit change</button>
-      </div>
+    <div class="hero-content">
+      <span class="badge">Live AI-driven docs demo</span>
+      <h1>Climbing Gym Membership API</h1>
+      <p>A live demo of AI-maintained API documentation. Propose a change, watch Claude draft the spec update, open a PR, and redeploy — all automatically.</p>
     </div>
   </div>
 
-  <!-- Status panel -->
-  <div class="status-panel" id="statusPanel">
-    <h4>AI documentation workflow</h4>
-    <div class="status-step pending" id="step-send"><div class="icon"></div><div class="label">Sending request</div></div>
-    <div class="status-step pending" id="step-ai"><div class="icon"></div><div class="label">Claude is drafting the spec update</div></div>
-    <div class="status-step pending" id="step-pr"><div class="icon"></div><div class="label">Pull request opened for review</div></div>
-    <div class="status-step pending" id="step-merge"><div class="icon"></div><div class="label">Reviewed &amp; merged by a human</div></div>
-    <div class="status-step pending" id="step-deploy"><div class="icon"></div><div class="label">Docs redeployed</div></div>
-    <div class="status-link" id="statusLink"></div>
+  <div class="cards-section">
+    <h2>Explore the docs</h2>
+    <p class="intro">Browse the full API reference or follow step-by-step tutorials for common workflows.</p>
+    <div class="cards">
+
+      <a href="./spec.html" class="card">
+        <div class="card-icon api">📄</div>
+        <div class="card-body">
+          <h3>API Reference</h3>
+          <p>Explore all endpoints, request schemas, and response codes for the Climbing Gym Membership API — available for Massachusetts and Maine.</p>
+          <span class="card-cta">
+            View API spec
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </div>
+      </a>
+
+      <a href="./tutorials.html" class="card">
+        <div class="card-icon tutorials">🧗</div>
+        <div class="card-body">
+          <h3>Tutorials</h3>
+          <p>Step-by-step guides for common tasks like registering a new member — with real request and response examples for each state.</p>
+          <span class="card-cta">
+            Browse tutorials
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </div>
+      </a>
+
+    </div>
   </div>
 
-  <div class="ribbon">
+  <footer class="footer">
     <span>This is a live demo. Every change you propose triggers a real AI workflow against a real repo.</span>
-    <a href="https://github.com/nikkiv92/chalk-it-up" target="_blank" rel="noopener">View on GitHub &rarr;</a>
-  </div>
+    <a href="https://github.com/nikkiv92/chalk-it-up" target="_blank" rel="noopener">GitHub &rarr;</a>
+  </footer>
 
-  <!-- Redoc -->
-  <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
-  <script>
-    // ====== CONFIG ======
-    // Replace this with your deployed Cloudflare Worker URL after you deploy it.
-    const WORKER_URL = "https://chalk-it-up-proxy.chalkitup.workers.dev/propose";
-    const REPO_OWNER = "nikkiv92";
-    const REPO_NAME = "chalk-it-up";
-    const VERSIONS = [
-      { label: "Massachusetts", value: "massachusetts", url: "./specs/massachusetts.yaml" },
-      { label: "Maine",         value: "maine",         url: "./specs/maine.yaml" }
-    ];
-    let activeVersion = VERSIONS[0];
-    // ====================
-
-    let currentSpecSha = null;
-    let pollTimer = null;
-
-    function renderRedoc(specUrl) {
-      specUrl = specUrl || activeVersion.url;
-      // Cache-bust by appending the latest known SHA so updates are picked up.
-      const bust = currentSpecSha ? `?v=${currentSpecSha}` : `?v=${Date.now()}`;
-      Redoc.init(specUrl + bust, {
-        scrollYOffset: 60,
-        hideDownloadButton: false,
-        theme: {
-          colors: { primary: { main: "#4432b9" } },
-          typography: {
-            fontFamily: "'Roboto', sans-serif",
-            headings: { fontFamily: "'Montserrat', sans-serif" }
-          }
-        }
-      }, document.getElementById("redoc-container"));
-    }
-
-    async function fetchCurrentSha() {
-      try {
-        const r = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/specs/${activeVersion.value}.yaml`);
-        if (!r.ok) return null;
-        const data = await r.json();
-        return data.sha;
-      } catch (e) { return null; }
-    }
-
-    function onVersionChange(value) {
-      const v = VERSIONS.find(v => v.value === value);
-      if (!v) return;
-      activeVersion = v;
-      currentSpecSha = null;
-      renderRedoc(v.url);
-    }
-
-    function toggleDropdown() {
-      document.getElementById("tutorialsDropdown").classList.toggle("open");
-    }
-    document.addEventListener("click", e => {
-      const dd = document.getElementById("tutorialsDropdown");
-      if (!dd.contains(e.target)) dd.classList.remove("open");
-    });
-
-    function openModal() { document.getElementById("modalBackdrop").classList.add("open"); }
-    function closeModal() { document.getElementById("modalBackdrop").classList.remove("open"); }
-    function useExample(el) { document.getElementById("nlInput").value = el.textContent; }
-    function toggleStructured() {
-      const s = document.getElementById("structured");
-      s.classList.toggle("open");
-      document.getElementById("structToggleText").innerHTML =
-        s.classList.contains("open") ? "Hide structured form &uarr;" : "Or use the structured form &darr;";
-    }
-
-    function setStep(id, state) {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.classList.remove("pending", "active", "done", "error");
-      el.classList.add(state);
-    }
-    function resetStatus() {
-      ["step-send","step-ai","step-pr","step-merge","step-deploy"].forEach(id => setStep(id, "pending"));
-      document.getElementById("statusLink").innerHTML = "";
-    }
-    function showStatus() { document.getElementById("statusPanel").classList.add("open"); }
-    function setStatusLink(html) { document.getElementById("statusLink").innerHTML = html; }
-
-    async function submitProposal() {
-      const nl = document.getElementById("nlInput").value.trim();
-      const structOpen = document.getElementById("structured").classList.contains("open");
-      const description = nl || (structOpen ? buildStructuredDescription() : "");
-
-      if (!description) {
-        alert("Please describe the change you'd like to make.");
-        return;
-      }
-
-      const selectedVersions = VERSIONS
-        .filter(v => document.getElementById(`v-check-${v.value}`)?.checked)
-        .map(v => v.value);
-      if (!selectedVersions.length) {
-        alert("Please select at least one version to apply this change to.");
-        return;
-      }
-
-      // Capture baseline SHA so we know when the workflow has actually landed a new commit.
-      currentSpecSha = await fetchCurrentSha();
-
-      closeModal();
-      resetStatus();
-      showStatus();
-      setStep("step-send", "active");
-
-      const submitBtn = document.getElementById("submitBtn");
-      submitBtn.disabled = true;
-
-      try {
-        const resp = await fetch(WORKER_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            description,
-            type: nl ? "natural_language" : "structured",
-            structured: structOpen ? {
-              change_type: document.getElementById("structType").value,
-              target: document.getElementById("structTarget").value,
-              details: document.getElementById("structDetails").value
-            } : null,
-            versions: selectedVersions,
-            include_tutorials: document.getElementById("includeTutorials")?.checked || false
-          })
-        });
-
-        if (!resp.ok) {
-          const text = await resp.text();
-          throw new Error(`Worker returned ${resp.status}: ${text}`);
-        }
-
-        setStep("step-send", "done");
-        setStep("step-ai", "active");
-        setStatusLink(`<a href="https://github.com/${REPO_OWNER}/${REPO_NAME}/actions" target="_blank">Watch the workflow on GitHub &rarr;</a>`);
-
-        // Start polling for new commits / PRs
-        startPolling();
-      } catch (e) {
-        console.error(e);
-        setStep("step-send", "error");
-        setStatusLink(`<span style="color:#ef4444">Error: ${e.message}</span>`);
-        submitBtn.disabled = false;
-      }
-    }
-
-    function buildStructuredDescription() {
-      const t = document.getElementById("structType").value;
-      const target = document.getElementById("structTarget").value;
-      const details = document.getElementById("structDetails").value;
-      const labels = {
-        add_endpoint: "Add a new endpoint",
-        modify_endpoint: "Modify an endpoint",
-        add_schema_field: "Add a field to a schema",
-        add_response: "Document a new response code"
-      };
-      return `${labels[t]}: ${target}\n\nDetails: ${details}`;
-    }
-
-    function startPolling() {
-      const start = Date.now();
-      let sawPr = false;
-      let sawMerge = false;
-      pollTimer = setInterval(async () => {
-        const elapsed = Date.now() - start;
-
-        // Poll open PRs first
-        if (!sawPr) {
-          try {
-            const r = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/pulls?state=all&sort=created&direction=desc&per_page=3`);
-            if (r.ok) {
-              const prs = await r.json();
-              const recent = prs.find(p => new Date(p.created_at).getTime() > start - 30000);
-              if (recent) {
-                sawPr = true;
-                setStep("step-ai", "done");
-                setStep("step-pr", "done");
-                setStep("step-merge", "active");
-                setStatusLink(`Review &amp; merge: <a href="${recent.html_url}" target="_blank">PR #${recent.number} &rarr;</a>`);
-              }
-            }
-          } catch (e) { /* ignore */ }
-        }
-
-        // Poll the main branch SHA for a new commit (i.e. a human merged the PR)
-        if (sawPr && !sawMerge) {
-          const sha = await fetchCurrentSha();
-          if (sha && sha !== currentSpecSha) {
-            sawMerge = true;
-            currentSpecSha = sha;
-            setStep("step-merge", "done");
-            setStep("step-deploy", "active");
-
-            // Give Pages ~25s to redeploy, then re-render
-            setTimeout(() => {
-              setStep("step-deploy", "done");
-              renderRedoc();
-              // Status link is preserved as-is (still points to the merged PR)
-              document.getElementById("submitBtn").disabled = false;
-              setTimeout(() => document.getElementById("statusPanel").classList.remove("open"), 8000);
-            }, 25000);
-          }
-        }
-
-        // Safety timeout: stop polling after 10 minutes (review-by-human can take a while)
-        if (elapsed > 10 * 60 * 1000) {
-          clearInterval(pollTimer);
-          if (!sawMerge) {
-            if (sawPr) {
-              // PR is open, just no merge yet — graceful timeout, not an error
-              setStatusLink(`<span style="color:var(--muted)">Still awaiting review. The docs will refresh whenever the PR is merged — reload anytime to check.</span>`);
-            } else {
-              setStep("step-ai", "error");
-              setStatusLink(`<span style="color:#ef4444">Timed out waiting for the workflow. Check the Actions tab.</span>`);
-            }
-            document.getElementById("submitBtn").disabled = false;
-          }
-        }
-
-        if (sawMerge) { clearInterval(pollTimer); }
-      }, 5000); // 5s interval keeps us well under GitHub's 60-req/hr unauthenticated limit
-    }
-
-    // Initial render
-    (async function init() {
-      // Populate version dropdown
-      const sel = document.getElementById("versionSelect");
-      VERSIONS.forEach(v => {
-        const opt = document.createElement("option");
-        opt.value = v.value;
-        opt.textContent = v.label;
-        sel.appendChild(opt);
-      });
-
-      // Pre-select version from ?version= query param if present
-      const paramVersion = new URLSearchParams(window.location.search).get("version");
-      if (paramVersion) {
-        const match = VERSIONS.find(v => v.value === paramVersion);
-        if (match) {
-          activeVersion = match;
-          sel.value = match.value;
-        }
-      }
-
-      // Populate version checkboxes in modal (all checked by default)
-      const container = document.getElementById("versionCheckboxes");
-      VERSIONS.forEach(v => {
-        const id = `v-check-${v.value}`;
-        const wrap = document.createElement("label");
-        wrap.style.cssText = "display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;";
-        const cb = document.createElement("input");
-        cb.type = "checkbox"; cb.id = id; cb.value = v.value; cb.checked = true;
-        cb.style.accentColor = "var(--accent)";
-        wrap.appendChild(cb);
-        const span = document.createElement("span");
-        span.style.whiteSpace = "nowrap";
-        span.textContent = v.label;
-        wrap.appendChild(span);
-        container.appendChild(wrap);
-      });
-
-      currentSpecSha = await fetchCurrentSha();
-      renderRedoc();
-    })();
-  </script>
 </body>
 </html>
