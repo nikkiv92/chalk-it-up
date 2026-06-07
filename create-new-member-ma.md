@@ -2,8 +2,8 @@
 
 This tutorial walks through calling the `POST /v1/members/register` endpoint (`registerMember` operation) to create a new member account at Chalk It Up locations in Massachusetts.
 
-- [Option A: Register a new member](#option-a-register-a-new-member) — no referral
-- [Option B: Register a member with a referral](#option-b-register-a-member-with-a-referral) — credit an existing member for bringing in the new one
+- [Option A: Register a new member](#option-a-register-a-new-member) — register a new member without any referrals.
+- [Option B: Register a member with a referral](#option-b-register-a-member-with-a-referral) — credit an existing member for referring a new member.
 
 ## Prerequisites
 
