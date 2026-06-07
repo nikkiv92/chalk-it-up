@@ -1078,7 +1078,7 @@ components:
       type: object
       required: [id, first_name, last_name, email, status, created_at]
       properties:
-        id:
+        member_id:
           type: string
           format: uuid
         first_name:
@@ -1160,7 +1160,7 @@ components:
         - type: object
           required: [id]
           properties:
-            id:
+            emergency_contact_id:
               type: string
               format: uuid
         - $ref: '#/components/schemas/EmergencyContactRequest'
@@ -1171,7 +1171,7 @@ components:
       type: object
       required: [id, title, version, content, required]
       properties:
-        id:
+        waiver_template_id:
           type: string
           format: uuid
         title:
@@ -1211,7 +1211,7 @@ components:
       type: object
       required: [id, member_id, waiver_template_id, version, signed_at, ip_address]
       properties:
-        id:
+        signed_waiver_id:
           type: string
           format: uuid
         member_id:
@@ -1245,7 +1245,7 @@ components:
       type: object
       required: [id, name, billing_interval, price_cents, currency, features, is_active]
       properties:
-        id:
+        membership_plan_id:
           type: string
           format: uuid
         name:
@@ -1291,7 +1291,7 @@ components:
       type: object
       required: [id, member_id, plan_id, status, current_period_start, current_period_end]
       properties:
-        id:
+        membership_id:
           type: string
           format: uuid
         member_id:
@@ -1366,7 +1366,7 @@ components:
       type: object
       required: [id, name, type, price_cents, currency, is_active]
       properties:
-        id:
+        pass_product_id:
           type: string
           format: uuid
         name:
@@ -1395,7 +1395,7 @@ components:
       type: object
       required: [id, member_id, product_id, type, status, purchased_at]
       properties:
-        id:
+        member_pass_id:
           type: string
           format: uuid
         member_id:
@@ -1463,7 +1463,7 @@ components:
       type: object
       required: [id, member_id, checked_in_at, entitlement_type]
       properties:
-        id:
+        check_in_id:
           type: string
           format: uuid
         member_id:
@@ -1497,7 +1497,7 @@ components:
       type: object
       required: [id, type, is_default, created_at]
       properties:
-        id:
+        payment_method_id:
           type: string
           format: uuid
         type:
@@ -1540,7 +1540,7 @@ components:
       type: object
       required: [id, member_id, status, amount_cents, currency, created_at]
       properties:
-        id:
+        invoice_id:
           type: string
           format: uuid
         member_id:
