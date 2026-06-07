@@ -19,7 +19,7 @@ servers:
     description: Staging
 
 tags:
-  - name: Auth
+  - name: Authentication
     description: Authentication and session management
   - name: Members
     description: Member account creation and management
@@ -71,7 +71,7 @@ paths:
   /v1/auth/login:
     post:
       operationId: login
-      tags: [Auth]
+      tags: [Authentication]
       summary: Log in with email and password
       requestBody:
         required: true
@@ -92,7 +92,7 @@ paths:
   /v1/auth/logout:
     post:
       operationId: logout
-      tags: [Auth]
+      tags: [Authentication]
       summary: Invalidate the current session token
       security:
         - BearerAuth: []
@@ -105,7 +105,7 @@ paths:
   /v1/auth/refresh:
     post:
       operationId: refreshToken
-      tags: [Auth]
+      tags: [Authentication]
       summary: Exchange a refresh token for a new access token
       requestBody:
         required: true
@@ -130,7 +130,7 @@ paths:
   /v1/auth/password/reset-request:
     post:
       operationId: requestPasswordReset
-      tags: [Auth]
+      tags: [Authentication]
       summary: Request a password reset email
       requestBody:
         required: true
@@ -151,7 +151,7 @@ paths:
   /v1/auth/password/reset:
     post:
       operationId: resetPassword
-      tags: [Auth]
+      tags: [Authentication]
       summary: Reset password using a token from email
       requestBody:
         required: true
@@ -175,7 +175,7 @@ paths:
   /v1/auth/email/verify:
     post:
       operationId: verifyEmail
-      tags: [Auth]
+      tags: [Authentication]
       summary: Verify a member's email address
       requestBody:
         required: true
