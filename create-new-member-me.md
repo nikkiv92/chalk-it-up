@@ -35,7 +35,7 @@ Content-Type: application/json
 
 ### Successful response — `201 Created`
 
-The response shows the newly registered member's unique member ID (`member.id`). The new member's status starts as `pending_verification`. A verification email is sent automatically to the address provided — the member must click the link before their status moves to `active`.
+The response shows the newly registered member's unique member ID (`member.member_id`). The new member's status starts as `pending_verification`. A verification email is sent automatically to the address provided — the member must click the link before their status moves to `active`.
 
 The response also includes an `access_token` and `refresh_token` so the member can be logged in immediately without a separate call to `POST /v1/auth/login`.
 
@@ -45,7 +45,7 @@ The response also includes an `access_token` and `refresh_token` so the member c
   "refresh_token": "dGhpcyBpcyBhIHJlZnJl...",
   "expires_in": 3600,
   "member": {
-    "id": "e7f3a021-4b2c-41de-9c3a-d5f123456789",
+    "member_id": "e7f3a021-4b2c-41de-9c3a-d5f123456789",
     "first_name": "Alexis",
     "last_name": "Kim",
     "email": "alexis.kim@example.com",
@@ -65,7 +65,7 @@ The response also includes an `access_token` and `refresh_token` so the member c
 
 ## Step 2: Register a member with a referral
 
-If the new member was referred by an existing member, you can pass `referred_by_member_id` to credit the referral. This field takes the referring member's `id` (a UUID).
+If the new member was referred by an existing member, you can pass `referred_by_member_id` to credit the referral. This field takes the referring member's `member_id` (a UUID).
 
 ### Look up the referring member's ID
 
@@ -82,7 +82,7 @@ Authorization: Bearer <staff_access_token>
 {
   "data": [
     {
-      "id": "a1b2c3d4-9e8f-47ab-bc12-d3e456789012",
+      "member_id": "a1b2c3d4-9e8f-47ab-bc12-d3e456789012",
       "first_name": "Patrick",
       "last_name": "Rose",
       "email": "patrick.rose@example.com",
@@ -101,7 +101,7 @@ Authorization: Bearer <staff_access_token>
 }
 ```
 
-Copy the `id` from the matching result — `"a1b2c3d4-9e8f-47ab-bc12-d3e456789012"` in this case — and pass it as `referred_by_member_id` in the registration request.
+Copy the `member_id` from the matching result — `"a1b2c3d4-9e8f-47ab-bc12-d3e456789012"` in this case — and pass it as `referred_by_member_id` in the registration request.
 
 ### Registration request with referral
 
