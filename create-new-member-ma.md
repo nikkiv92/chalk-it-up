@@ -1,6 +1,9 @@
 # Tutorial: Register a New Member (Massachusetts locations)
 
-This tutorial walks through calling the `POST /v1/members/register` endpoint (`registerMember` operation) to create a new member account at Chalk It Up locations in Massachusetts. You'll see a basic registration, then a referral scenario where the new member was brought in by an existing one.
+This tutorial walks through calling the `POST /v1/members/register` endpoint (`registerMember` operation) to create a new member account at Chalk It Up locations in Massachusetts.
+
+- [Option A: Register a new member](#option-a-register-a-new-member) — no referral
+- [Option B: Register a member with a referral](#option-b-register-a-member-with-a-referral) — credit an existing member for bringing in the new one
 
 ## Prerequisites
 
@@ -11,7 +14,7 @@ This tutorial walks through calling the `POST /v1/members/register` endpoint (`r
 
 ---
 
-## Step 1: Register a new member
+## Option A: Register a new member
 
 To register a new member, send a `POST` request to the `/v1/members/register` [endpoint](https://nikkiv92.github.io/chalk-it-up/spec.html?location=massachusetts#tag/Members/operation/registerMember) with the new member's details. 
 
@@ -63,7 +66,7 @@ The response also includes an `access_token` and `refresh_token` so the member c
 
 ---
 
-## Step 2: Register a member with a referral
+## Option B: Register a member with a referral
 
 If the new member was referred by an existing member, you can pass `referred_by_member_id` to credit the referral. This field takes the referring member's `member_id` (a UUID).
 
