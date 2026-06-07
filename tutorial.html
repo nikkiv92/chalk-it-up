@@ -41,6 +41,13 @@
       cursor: pointer; text-decoration: none;
     }
     .back-btn:hover { border-color: var(--accent); }
+    .propose-btn {
+      background: var(--accent); color: white; border: 0; padding: 8px 16px;
+      border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer;
+      text-decoration: none; box-shadow: 0 2px 8px rgba(68,50,185,0.35);
+      transition: transform 0.1s ease, box-shadow 0.2s ease;
+    }
+    .propose-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(68,50,185,0.5); }
 
     /* Two-column layout */
     .page-body {
@@ -152,9 +159,10 @@
       Chalk It Up &mdash; Climbing Gym Membership API
       <span class="sub">Live AI-driven documentation demo</span>
     </a>
-    <div style="display:flex;gap:8px;">
+    <div style="display:flex;gap:8px;align-items:center;">
       <a class="back-btn" href="./tutorials.html">All tutorials</a>
       <a class="back-btn" href="./spec.html">API Reference</a>
+      <a class="propose-btn" href="./tutorials.html#propose">Propose a change</a>
     </div>
   </div>
 

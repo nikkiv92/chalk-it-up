@@ -137,6 +137,95 @@
       color: var(--accent-dark); text-decoration: none; font-weight: 600;
     }
     .card-footer a:hover { text-decoration: underline; }
+
+    /* Propose button */
+    .propose-btn {
+      background: var(--accent); color: white; border: 0; padding: 10px 18px;
+      border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer;
+      box-shadow: 0 2px 8px rgba(68,50,185,0.35);
+      transition: transform 0.1s ease, box-shadow 0.2s ease;
+    }
+    .propose-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(68,50,185,0.5); }
+    .propose-btn:active { transform: translateY(0); }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(20,22,30,0.55);
+      display: none; align-items: center; justify-content: center; z-index: 2000;
+      backdrop-filter: blur(2px);
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: white; width: min(600px, 92vw); border-radius: 14px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+      padding: 28px; max-height: 90vh; overflow-y: auto;
+    }
+    .modal h2 { margin: 0 0 8px; font-family: 'Montserrat', sans-serif; font-size: 22px; }
+    .modal p.lead { color: var(--muted); margin: 0 0 20px; font-size: 14px; line-height: 1.5; }
+    .field { margin-bottom: 16px; }
+    .field label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px; }
+    .field textarea {
+      width: 100%; padding: 10px 12px; border: 1px solid var(--border);
+      border-radius: 8px; font: inherit; font-size: 14px; resize: vertical; min-height: 90px;
+    }
+    .field textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(68,50,185,0.15); }
+    .actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+    .btn-secondary {
+      background: white; color: var(--ink); border: 1px solid var(--border);
+      padding: 10px 18px; border-radius: 8px; font-weight: 500; cursor: pointer;
+    }
+    .btn-primary {
+      background: var(--accent); color: white; border: 0;
+      padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer;
+    }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Spec-change warning banner */
+    .spec-warning {
+      display: none; margin-top: 16px; padding: 14px 16px;
+      background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px;
+    }
+    .spec-warning.open { display: block; }
+    .spec-warning strong { color: #9a3412; font-size: 13px; display: block; margin-bottom: 4px; }
+    .spec-warning p { color: #7c2d12; font-size: 13px; margin: 0 0 10px; line-height: 1.5; }
+    .spec-warning a { color: var(--accent-dark); font-weight: 600; font-size: 13px; text-decoration: none; }
+    .spec-warning a:hover { text-decoration: underline; }
+
+    /* Status panel */
+    .status-panel {
+      position: fixed; bottom: 24px; right: 24px; z-index: 1500;
+      background: white; border-radius: 12px; padding: 16px 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15); border: 1px solid var(--border);
+      width: 360px; display: none;
+    }
+    .status-panel.open { display: block; }
+    .status-panel h4 { margin: 0 0 12px; font-family: 'Montserrat', sans-serif; font-size: 15px; }
+    .status-step { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; font-size: 13px; }
+    .status-step .icon {
+      width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
+      border: 2px solid var(--border); margin-top: 1px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700;
+    }
+    .status-step.active .icon { border-color: var(--accent); background: var(--accent); color: white; }
+    .status-step.active .icon::before {
+      content: ""; width: 8px; height: 8px; background: white; border-radius: 50%;
+      animation: pulse 1s ease-in-out infinite;
+    }
+    .status-step.done .icon { border-color: #10b981; background: #10b981; color: white; }
+    .status-step.done .icon::before { content: "\2713"; }
+    .status-step.error .icon { border-color: #ef4444; background: #ef4444; color: white; }
+    .status-step.error .icon::before { content: "!"; }
+    .status-step .label { flex: 1; line-height: 1.4; color: var(--ink); }
+    .status-step.pending .label { color: var(--muted); }
+    .status-link { margin-top: 10px; font-size: 12px; }
+    .status-link a { color: var(--accent-dark); text-decoration: none; font-weight: 600; }
+    .status-link a:hover { text-decoration: underline; }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(0.6); opacity: 0.5; }
+    }
   </style>
 </head>
 <body>
@@ -146,7 +235,60 @@
       Chalk It Up &mdash; Climbing Gym Membership API
       <span class="sub">Live AI-driven documentation demo</span>
     </a>
-    <a class="back-btn" href="./spec.html">API Reference</a>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <a class="back-btn" href="./spec.html">API Reference</a>
+      <button class="propose-btn" onclick="openModal()">Propose a change</button>
+    </div>
+  </div>
+
+  <!-- Propose a tutorial change modal -->
+  <div class="modal-backdrop" id="modalBackdrop" onclick="if(event.target===this)closeModal()">
+    <div class="modal" role="dialog" aria-modal="true">
+      <h2>Propose a tutorial change</h2>
+      <p class="lead">Describe the change you'd like to make to the tutorial documentation. An AI workflow will draft the update and open a pull request for human review.</p>
+
+      <div class="field">
+        <label for="nlInput">What should change?</label>
+        <textarea id="nlInput" placeholder="e.g., Add a note explaining that email verification must be completed before the member can check in."></textarea>
+      </div>
+
+      <div class="field">
+        <label>Apply to tutorial(s)</label>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:4px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+            <input type="checkbox" id="tut-check-massachusetts" value="massachusetts" checked style="accent-color:var(--accent);">
+            Massachusetts
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+            <input type="checkbox" id="tut-check-maine" value="maine" checked style="accent-color:var(--accent);">
+            Maine
+          </label>
+        </div>
+      </div>
+
+      <div class="spec-warning" id="specWarning">
+        <strong>⚠ This change requires an API spec update first</strong>
+        <p id="specWarningReason"></p>
+        <a href="./spec.html" onclick="closeModal()">Propose a spec change instead &rarr;</a>
+      </div>
+
+      <div class="actions">
+        <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn-primary" id="submitBtn" onclick="submitProposal()">Submit change</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status panel -->
+  <div class="status-panel" id="statusPanel">
+    <h4>AI tutorial update workflow</h4>
+    <div class="status-step pending" id="step-send"><div class="icon"></div><div class="label">Sending request</div></div>
+    <div class="status-step pending" id="step-check"><div class="icon"></div><div class="label">Checking for spec dependencies</div></div>
+    <div class="status-step pending" id="step-ai"><div class="icon"></div><div class="label">Claude is drafting the tutorial update</div></div>
+    <div class="status-step pending" id="step-pr"><div class="icon"></div><div class="label">Pull request opened for review</div></div>
+    <div class="status-step pending" id="step-merge"><div class="icon"></div><div class="label">Reviewed &amp; merged by a human</div></div>
+    <div class="status-step pending" id="step-deploy"><div class="icon"></div><div class="label">Docs redeployed</div></div>
+    <div class="status-link" id="statusLink"></div>
   </div>
 
   <div class="content">
@@ -187,5 +329,162 @@
 
     </div>
   </div>
+
+  <script>
+    const WORKER_URL = "https://chalk-it-up-proxy.chalkitup.workers.dev/propose-tutorial";
+    const REPO_OWNER = "nikkiv92";
+    const REPO_NAME  = "chalk-it-up";
+
+    let pollTimer = null;
+
+    function openModal() {
+      document.getElementById("specWarning").classList.remove("open");
+      document.getElementById("submitBtn").disabled = false;
+      document.getElementById("modalBackdrop").classList.add("open");
+    }
+    function closeModal() {
+      document.getElementById("modalBackdrop").classList.remove("open");
+    }
+
+    function setStep(id, state) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.remove("pending", "active", "done", "error");
+      el.classList.add(state);
+    }
+    function resetStatus() {
+      ["step-send","step-check","step-ai","step-pr","step-merge","step-deploy"].forEach(id => setStep(id, "pending"));
+      document.getElementById("statusLink").innerHTML = "";
+    }
+    function showStatus() { document.getElementById("statusPanel").classList.add("open"); }
+    function setStatusLink(html) { document.getElementById("statusLink").innerHTML = html; }
+
+    async function submitProposal() {
+      const description = document.getElementById("nlInput").value.trim();
+      if (!description) { alert("Please describe the change you'd like to make."); return; }
+
+      const tutorials = ["massachusetts", "maine"]
+        .filter(loc => document.getElementById(`tut-check-${loc}`)?.checked);
+      if (!tutorials.length) { alert("Please select at least one tutorial to update."); return; }
+
+      document.getElementById("specWarning").classList.remove("open");
+      document.getElementById("submitBtn").disabled = true;
+      closeModal();
+      resetStatus();
+      showStatus();
+      setStep("step-send", "active");
+
+      let resp;
+      try {
+        resp = await fetch(WORKER_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ description, tutorials })
+        });
+      } catch (e) {
+        setStep("step-send", "error");
+        setStatusLink(`<span style="color:#ef4444">Network error: ${e.message}</span>`);
+        document.getElementById("submitBtn").disabled = false;
+        return;
+      }
+
+      setStep("step-send", "done");
+      setStep("step-check", "active");
+
+      // 422 means the worker's pre-flight check flagged a spec dependency
+      if (resp.status === 422) {
+        const data = await resp.json();
+        setStep("step-check", "error");
+        setStatusLink("");
+        document.getElementById("statusPanel").classList.remove("open");
+
+        // Re-open modal with warning
+        document.getElementById("specWarningReason").textContent = data.reason || "This change requires a spec update first.";
+        document.getElementById("specWarning").classList.add("open");
+        document.getElementById("submitBtn").disabled = false;
+        document.getElementById("modalBackdrop").classList.add("open");
+        return;
+      }
+
+      if (!resp.ok) {
+        const text = await resp.text();
+        setStep("step-check", "error");
+        setStatusLink(`<span style="color:#ef4444">Error: ${text}</span>`);
+        document.getElementById("submitBtn").disabled = false;
+        return;
+      }
+
+      setStep("step-check", "done");
+      setStep("step-ai", "active");
+      setStatusLink(`<a href="https://github.com/${REPO_OWNER}/${REPO_NAME}/actions" target="_blank">Watch the workflow on GitHub &rarr;</a>`);
+
+      startPolling();
+    }
+
+    function startPolling() {
+      const start = Date.now();
+      let sawPr = false;
+      let sawMerge = false;
+
+      pollTimer = setInterval(async () => {
+        const elapsed = Date.now() - start;
+
+        if (!sawPr) {
+          try {
+            const r = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/pulls?state=all&sort=created&direction=desc&per_page=3`);
+            if (r.ok) {
+              const prs = await r.json();
+              const recent = prs.find(p => new Date(p.created_at).getTime() > start - 30000);
+              if (recent) {
+                sawPr = true;
+                setStep("step-ai", "done");
+                setStep("step-pr", "done");
+                setStep("step-merge", "active");
+                setStatusLink(`Review &amp; merge: <a href="${recent.html_url}" target="_blank">PR #${recent.number} &rarr;</a>`);
+              }
+            }
+          } catch (e) { /* ignore */ }
+        }
+
+        if (sawPr && !sawMerge) {
+          try {
+            const r = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/commits/main`);
+            if (r.ok) {
+              const data = await r.json();
+              const commitTime = new Date(data.commit.committer.date).getTime();
+              if (commitTime > start) {
+                sawMerge = true;
+                setStep("step-merge", "done");
+                setStep("step-deploy", "active");
+                setTimeout(() => {
+                  setStep("step-deploy", "done");
+                  document.getElementById("submitBtn").disabled = false;
+                  setTimeout(() => document.getElementById("statusPanel").classList.remove("open"), 8000);
+                }, 25000);
+              }
+            }
+          } catch (e) { /* ignore */ }
+        }
+
+        if (elapsed > 10 * 60 * 1000) {
+          clearInterval(pollTimer);
+          if (!sawMerge) {
+            if (sawPr) {
+              setStatusLink(`<span style="color:var(--muted)">Still awaiting review. Reload anytime to check.</span>`);
+            } else {
+              setStep("step-ai", "error");
+              setStatusLink(`<span style="color:#ef4444">Timed out. Check the Actions tab on GitHub.</span>`);
+            }
+            document.getElementById("submitBtn").disabled = false;
+          }
+        }
+
+        if (sawMerge) clearInterval(pollTimer);
+      }, 5000);
+    }
+
+    // Auto-open modal if linked with #propose
+    if (window.location.hash === "#propose") openModal();
+  </script>
 </body>
 </html>
