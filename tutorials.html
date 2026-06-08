@@ -465,6 +465,7 @@
 
       setStep("step-check", "done");
       setStep("step-ai", "active");
+      document.querySelector('#step-ai .label').textContent = 'Workflow queued…';
       setStatusLink(`<a href="https://github.com/${REPO_OWNER}/${REPO_NAME}/actions" target="_blank">Watch the workflow on GitHub &rarr;</a>`);
 
       startPolling();
@@ -472,11 +473,30 @@
 
     function startPolling() {
       const start = Date.now();
+      let sawWorkflow = false;
       let sawPr = false;
       let sawMerge = false;
 
       pollTimer = setInterval(async () => {
         const elapsed = Date.now() - start;
+
+        // Detect when the Actions workflow is picked up — flip label from "queued" to "drafting"
+        if (!sawWorkflow) {
+          try {
+            const r = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/actions/runs?event=repository_dispatch&per_page=5`);
+            if (r.ok) {
+              const data = await r.json();
+              const recent = data.workflow_runs?.find(run =>
+                new Date(run.created_at).getTime() > start - 30000 &&
+                run.name === "AI Update Tutorials"
+              );
+              if (recent) {
+                sawWorkflow = true;
+                document.querySelector('#step-ai .label').textContent = 'Claude is drafting the tutorial update';
+              }
+            }
+          } catch (e) { /* ignore */ }
+        }
 
         if (!sawPr) {
           try {
