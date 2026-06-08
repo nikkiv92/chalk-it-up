@@ -2,7 +2,7 @@
 
 This tutorial walks through calling the `POST /v1/members/register` endpoint (`registerMember` operation) to create a new member account at Chalk It Up locations in Maine.
 
-- [Option A: Register a new member](#option-a-register-a-new-member) — register a new member without any referrals.
+- [Option A: Register a new member without a referral](#option-a-register-a-new-member-without-a-referral) — register a new member without any referrals.
 - [Option B: Register a new member with a referral](#option-b-register-a-new-member-with-a-referral) — credit an existing member for referring a new member.
 
 ## Prerequisites
@@ -14,7 +14,7 @@ This tutorial walks through calling the `POST /v1/members/register` endpoint (`r
 
 ---
 
-## Option A: Register a new member
+## Option A: Register a new member without a referral
 
 To register a new member, send a `POST` request to the `/v1/members/register` [endpoint](https://nikkiv92.github.io/chalk-it-up/spec.html?location=maine#tag/Members/operation/registerMember) with the new member's details.
 
