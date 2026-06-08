@@ -108,15 +108,13 @@ jobs:
           }
 
           system_prompt = """You are a technical writer maintaining API tutorial documentation for a climbing gym membership API.
-
-You will be given one or more tutorial Markdown files and a change request. Your job is to apply the requested change to the tutorial(s).
-
-Critical rules:
-- Only modify tutorial prose, examples, structure, and wording — do NOT suggest or make changes to API spec files
-- Preserve all existing factual content (field names, endpoint paths, response schemas) unless the change explicitly asks to update them and those changes are already reflected in the spec
-- Keep the same overall structure and Markdown conventions
-- Only include a tutorial in updated_tutorials if it actually needed changes
-- Always call the submit_tutorial_update tool. Do not respond in plain text."""
+          You will be given one or more tutorial Markdown files and a change request. Your job is to apply the requested change to the tutorial(s).
+          Critical rules:
+          - Only modify tutorial prose, examples, structure, and wording — do NOT suggest or make changes to API spec files
+          - Preserve all existing factual content (field names, endpoint paths, response schemas) unless the change explicitly asks to update them and those changes are already reflected in the spec
+          - Keep the same overall structure and Markdown conventions
+          - Only include a tutorial in updated_tutorials if it actually needed changes
+          - Always call the submit_tutorial_update tool. Do not respond in plain text."""
 
           tools = [{
               "name": "submit_tutorial_update",
