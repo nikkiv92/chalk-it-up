@@ -14,7 +14,8 @@ chalk-it-up/
 │   └── maine.yaml                ← Maine locations (v1)
 ├── create-new-member-ma.md       ← Tutorial: register a member (MA)
 ├── create-new-member-me.md       ← Tutorial: register a member (ME)
-├── index.html                    ← Live docs site (Redoc + AI propose-a-change UI)
+├── index.html                    ← Landing page
+├── spec.html                     ← Live API reference (Redoc + AI propose-a-change UI)
 ├── tutorials.html                ← Tutorials landing page
 ├── tutorial.html                 ← Tutorial renderer
 └── worker/                       ← Cloudflare Worker proxy for the AI workflow
@@ -46,7 +47,7 @@ All write operations and member-specific reads require a `Bearer` JWT in the `Au
 | Tag | Description |
 |-----|-------------|
 | **Members** | Member registration, profile management (`/members/me`), and staff-facing member admin |
-| **Auth** | Login, logout, token refresh, email verification, password reset |
+| **Authentication** | Login, logout, token refresh, email verification, password reset |
 | **Emergency Contacts** | CRUD for a member's emergency contacts |
 | **Waivers** | Liability waiver templates and signed waiver records |
 | **Memberships** | Plan catalog, subscription lifecycle (subscribe, cancel, freeze, unfreeze) |
@@ -156,7 +157,7 @@ The specs can be updated manually or via the AI workflow:
 3. Open a pull request with a description of what changed and why.
 
 **AI workflow**
-Use the "Propose a change" button on the [live docs site](https://nikkiv92.github.io/chalk-it-up/) to submit a plain-English change request. Claude will draft the spec update, open a PR, and optionally update the relevant tutorial files. A human reviews and merges.
+Use the "Propose a change" button on the [API reference](https://nikkiv92.github.io/chalk-it-up/spec.html) or the "Propose a tutorial change" button on the [tutorials page](https://nikkiv92.github.io/chalk-it-up/tutorials.html) to submit a plain-English change request. Claude will draft the update, open a PR, and a human reviews and merges.
 
 For breaking changes (removed fields, changed types, renamed operationIds), bump `info.version` in the affected spec(s) and note the change in your PR description.
 
