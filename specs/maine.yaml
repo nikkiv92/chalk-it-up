@@ -789,6 +789,12 @@ paths:
       responses:
         '204':
           description: Payment method removed
+          content:
+            application/json:
+              examples:
+                paymentMethodRemoved:
+                  summary: Payment method successfully removed
+                  value: ''
         '404':
           $ref: '#/components/responses/NotFound'
     patch:

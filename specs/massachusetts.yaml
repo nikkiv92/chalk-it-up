@@ -788,6 +788,8 @@ paths:
       responses:
         '204':
           description: Payment method removed
+          x-response-example: |
+            HTTP/1.1 204 No Content
         '404':
           $ref: '#/components/responses/NotFound'
     patch:
