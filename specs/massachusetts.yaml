@@ -1010,6 +1010,11 @@ components:
           description: The member's legal first name.
           maxLength: 100
           example: Johnny
+        middle_name:
+          type: string
+          description: The member's legal middle name. Optional; used for identity verification and printed on waivers when provided.
+          maxLength: 100
+          example: Bartholomew
         last_name:
           type: string
           description: The member's legal last name.
