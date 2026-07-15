@@ -137,9 +137,9 @@ paths:
           application/json:
             schema:
               type: object
-              required: [email]
+              required: [user_email]
               properties:
-                email:
+                user_email:
                   type: string
                   format: email
                   description: The climber's email address where they will receive invoices, event sign up confirmations, reminders, and other correspondence.
@@ -671,7 +671,7 @@ paths:
       summary: Record a member check-in (staff / kiosk)
       description: |
         Validates membership or pass entitlement and records entry.
-        Can identify member by `member_id`, `barcode`, or `email`.
+        Can identify member by `member_id`, `barcode`, or `user_email`.
       security:
         - BearerAuth: []
       requestBody:
@@ -970,7 +970,7 @@ components:
             properties:
               field:
                 type: string
-                example: email
+                example: user_email
               message:
                 type: string
                 example: Must be a valid email address.
@@ -1043,9 +1043,9 @@ components:
 
     LoginRequest:
       type: object
-      required: [email, password]
+      required: [user_email, password]
       properties:
-        email:
+        user_email:
           type: string
           format: email
           description: The climber's email address where they will receive invoices, event sign up confirmations, reminders, and other correspondence.
@@ -1076,7 +1076,7 @@ components:
 
     Member:
       type: object
-      required: [id, first_name, last_name, email, status, created_at]
+      required: [id, first_name, last_name, user_email, status, created_at]
       properties:
         member_id:
           type: string
@@ -1087,7 +1087,7 @@ components:
         last_name:
           type: string
           description: The member's legal last name.
-        email:
+        user_email:
           type: string
           format: email
           description: The climber's email address where they will receive invoices, event sign up confirmations, reminders, and other correspondence.
@@ -1150,7 +1150,7 @@ components:
           example: Spouse
         phone:
           type: string
-        email:
+        user_email:
           type: string
           format: email
           description: The climber's email address where they will receive invoices, event sign up confirmations, reminders, and other correspondence.
@@ -1437,14 +1437,14 @@ components:
 
     CheckInRequest:
       type: object
-      description: At least one of member_id, barcode, or email is required.
+      description: At least one of member_id, barcode, or user_email is required.
       properties:
         member_id:
           type: string
           format: uuid
         barcode:
           type: string
-        email:
+        user_email:
           type: string
           format: email
           description: The climber's email address where they will receive invoices, event sign up confirmations, reminders, and other correspondence.
